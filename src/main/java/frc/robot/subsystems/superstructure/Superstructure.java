@@ -3,6 +3,7 @@ package frc.robot.subsystems.superstructure;
 import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.constants.FieldConstants.path;
 import static frc.robot.subsystems.climb.ClimbConstants.kAutonClimbSequenceRetractIntermission;
+import static frc.robot.subsystems.climb.ClimbConstants.kHasClimb;
 import static frc.robot.subsystems.shooter.hood.HoodConstants.kExitAngleOffset;
 import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationAngle;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kAverageShotTime;
@@ -286,7 +287,7 @@ public class Superstructure extends SubsystemBase {
 			m_hasClimbed = Math.abs(Math.toDegrees(pose.getRotation().getY())) >= kClimbPitchAngleDiffThreshold;
 			Logger.recordOutput("Superstructure/SimHopperFuelCount", m_intakeSim.getGamePiecesAmount());
 		} else {
-			m_hasClimbed = Math.abs(m_swerve.getGyro().getInputs().pitchDegrees) >= kClimbPitchAngleDiffThreshold;
+			m_hasClimbed = Math.abs(m_swerve.getGyro().getInputs().pitchDegrees) >= kClimbPitchAngleDiffThreshold && kHasClimb;
 		}
 
 		if (m_hasClimbed && m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking) {
@@ -461,6 +462,7 @@ public class Superstructure extends SubsystemBase {
 	 * @return The command to extend the climber arm.
 	 */
 	public Command climbExtend() {
+		if (!kHasClimb) return Commands.print("Attempted to climb without a climber?");
 		return // Commands
 				// .runOnce(() -> m_primaryState = m_hasClimbed ? PrimaryState.kClimbing :
 				// PrimaryState.kPrimaryIdle)
@@ -479,6 +481,7 @@ public class Superstructure extends SubsystemBase {
 	 * @return The command to forcefully extend the climber arm, regardless of state.
 	 */
 	public Command climbForceExtend() {
+		if (!kHasClimb) return Commands.print("Attempted to force-extend climb without a climber?");
 		return Commands.runOnce(m_climb::extendArm).withName("Climb.ForceExtend");
 	}
 
@@ -488,6 +491,7 @@ public class Superstructure extends SubsystemBase {
 	 * @return The command to retract the climber arm.
 	 */
 	public Command climbRetract() {
+		if (!kHasClimb) return Commands.print("Attempted to retract climb without a climber?");
 		return // Commands
 				// .runOnce(() -> m_primaryState = m_hasClimbed ? PrimaryState.kClimbing :
 				// PrimaryState.kPrimaryIdle)
@@ -593,6 +597,7 @@ public class Superstructure extends SubsystemBase {
 	 * @return A command that pathfinds to the climb point, and autonomously climbs.
 	 */
 	public Command alignClimberAndClimbCommand() {
+		if (!kHasClimb) return Commands.print("Attempted to align-and-climb without a climber?");
 		Command cmd = Commands.runOnce(() -> m_isClimbPathfinding = true)
 				.andThen(Commands.parallel(stopIntake(), climbExtend()))
 				.andThen(new DeferredCommand(() -> AutoBuilder.pathfindThenFollowPath(getClimberAlignPathPre(),
@@ -614,6 +619,7 @@ public class Superstructure extends SubsystemBase {
 	 * @return An automatic climb sequence when the robot is autonomous.
 	 */
 	public Command climbSequenceAuton() {
+		if (!kHasClimb) return Commands.print("Attempted climb sequence without a climber?");
 		return climbExtend().andThen(Commands.waitUntil(() -> m_climb.getState() == BangBangElevatorState.kExtended))
 				.andThen(Commands.waitSeconds(kAutonClimbSequenceRetractIntermission))
 				.andThen(climbRetract())

@@ -15,6 +15,7 @@ import static frc.robot.constants.OIConstants.kOperatorOuttakeKeybind;
 import static frc.robot.constants.OIConstants.kOperatorPassFuelKeybind;
 import static frc.robot.constants.OIConstants.kOperatorScoreHubKeybind;
 import static frc.robot.constants.OIConstants.kOperatorToggleObjectiveKeybind;
+import static frc.robot.subsystems.climb.ClimbConstants.kHasClimb;
 import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationAngle;
 import static frc.robot.subsystems.shooter.turret.TurretConstants.kTurretCalibrationAngle;
 
@@ -171,10 +172,12 @@ public class RobotContainer {
 				.onTrue(Commands.runOnce(this::zeroSubsytemEncoders)
 						.andThen(Commands.runOnce(m_autoManager::scheduleAuto)));
 		RobotModeTriggers.autonomous().onFalse(Commands.runOnce(m_autoManager::cancelAuto));
+
 		// Extend climber in teleop when in climbing state to unclimb
-		RobotModeTriggers.teleop()
-				.onTrue(superstructure.climbExtend()
-						.onlyIf(() -> superstructure.getPrimaryState() == PrimaryState.kClimbing));
+		if (kHasClimb)
+			RobotModeTriggers.teleop()
+					.onTrue(superstructure.climbExtend()
+							.onlyIf(() -> superstructure.getPrimaryState() == PrimaryState.kClimbing));
 
 		// Disable objective oriented mode on disable
 		RobotModeTriggers.disabled()
@@ -202,10 +205,12 @@ public class RobotContainer {
 		// Stop the robot
 		kDriverXBrakeKeybind.whileTrue(Commands.run(swerve::setX));
 		// Climber keybinds
-		kDriverExtendClimbKeybind.onTrue(superstructure.climbExtend());
-		kDriverRetractClimbKeybind.onTrue(superstructure.climbRetract());
-		kDriverAutomaticClimbKeybind.whileTrue(superstructure.alignClimberAndClimbCommand()
-				.handleInterrupt(() -> { System.out.println("Align & Climb was interrupted!"); climb.extendArm(); }));
+		if (kHasClimb) {
+			kDriverExtendClimbKeybind.onTrue(superstructure.climbExtend());
+			kDriverRetractClimbKeybind.onTrue(superstructure.climbRetract());
+			kDriverAutomaticClimbKeybind.whileTrue(superstructure.alignClimberAndClimbCommand()
+					.handleInterrupt(() -> { System.out.println("Align & Climb was interrupted!"); climb.extendArm(); }));
+		}
 
 		// Operator Keybinds //
 
@@ -472,7 +477,7 @@ public class RobotContainer {
 	private void initSuperstructure() {
 		switch (Robot.kRobotMode) {
 			case kReal:
-				climb = new Climb(new ClimbIOKraken());
+				climb = new Climb(kHasClimb ? new ClimbIOKraken() : new ClimbIO() {});
 				break;
 
 			case kSim:

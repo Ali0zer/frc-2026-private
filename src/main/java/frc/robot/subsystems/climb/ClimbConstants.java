@@ -6,6 +6,9 @@ import edu.wpi.first.math.system.plant.DCMotor;
  * The constants required for the climb subsystem.
  */
 public class ClimbConstants {
+	// For Yeditepe Regional, climb won't be assembled
+	public static final boolean kHasClimb = false;
+
 	// Motor ID
 	public static final int kMotorID = 3;
 	public static final String kMotorCANBus = ""; // Main RIO bus

@@ -1,5 +1,6 @@
 package frc.robot.subsystems.superstructure;
 
+import static frc.robot.subsystems.climb.ClimbConstants.kHasClimb;
 import static frc.robot.subsystems.climb.ClimbConstants.kMaxClimberHeight;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kClimberMetersPerMotorRev;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kClimberRobotClimbHeightThreshold;
@@ -107,6 +108,7 @@ public class SuperstructureVisualizer extends SubsystemBase {
 	 * @return The new 3D robot pose.
 	 */
 	public Pose3d getRobotPoseWithHeight(Pose2d robotPose) {
+		if (!kHasClimb) return new Pose3d(robotPose);
 		Pose3d displayPose;
 		if (m_hasClimbed && !isWithinClimbRegion(robotPose)) {
 			// Robot fell off the climber

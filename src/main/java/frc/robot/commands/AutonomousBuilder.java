@@ -2,6 +2,7 @@ package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.constants.FieldConstants.path;
+import static frc.robot.subsystems.climb.ClimbConstants.kHasClimb;
 
 import com.bobcats.lib.auto.CustomRoutineBuilder;
 import com.bobcats.lib.utils.AllianceUtil;
@@ -156,8 +157,10 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 
 		m_climbSideChooser = new LoggedDashboardChooser<>("Autonomous Climb Side");
 		m_climbSideChooser.addDefaultOption("None", AutoClimbSide.kNone);
-		m_climbSideChooser.addOption("Right", AutoClimbSide.kRight);
-		m_climbSideChooser.addOption("Left", AutoClimbSide.kLeft);
+		if (kHasClimb) {
+			m_climbSideChooser.addOption("Right", AutoClimbSide.kRight);
+			m_climbSideChooser.addOption("Left", AutoClimbSide.kLeft);
+		}
 		m_climbSideChooser.addOption("Park", AutoClimbSide.kPark);
 
 		m_passThroughTowerObj1 = new LoggedDashboardChooser<>("Autonomous Pass Through Tower Objective #1");
@@ -296,7 +299,7 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 
 		// Pre-extend arm to save time
 		Command climbInitiate = superstructure.climbForceExtend()
-				.onlyIf(() -> climbSide != AutoClimbSide.kNone && climbSide != AutoClimbSide.kPark);
+				.onlyIf(() -> climbSide != AutoClimbSide.kNone && climbSide != AutoClimbSide.kPark && kHasClimb);
 
 		// Return early if using a PP routine
 		if (autoType == AutoType.kPathPlanner)
