@@ -31,6 +31,9 @@ import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -41,6 +44,8 @@ import edu.wpi.first.units.measure.Voltage;
 /** The IO hardware implementation for turret hardware interacions with the TalonFX. */
 public class TurretIOKraken implements TurretIO {
 	private TalonFX m_talon;
+
+	private Debouncer m_motorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
 
 	private VoltageOut m_voltsOut = new VoltageOut(0.0).withEnableFOC(kIsFOC);
 	private MotionMagicVoltage m_positionOut = new MotionMagicVoltage(0.0).withEnableFOC(kIsFOC).withSlot(0);
@@ -91,9 +96,9 @@ public class TurretIOKraken implements TurretIO {
 
 	@Override
 	public void updateInputs(TurretIOInputs inputs) {
-		inputs.motorConnected = BaseStatusSignal
+		inputs.motorConnected = m_motorConnectedDebouncer.calculate(BaseStatusSignal
 				.refreshAll(m_voltsSignal, m_rpmSignal, m_positionSignal, m_supplySignal, m_statorSignal, m_tempSignal)
-				.isOK();
+				.isOK());
 		inputs.appliedVoltage = m_voltsSignal.getValue().in(Volts);
 		inputs.rpm = m_rpmSignal.getValue().in(RPM);
 		inputs.positionDegrees = Units.rotationsToDegrees(m_positionSignal.getValue().in(Revolutions));

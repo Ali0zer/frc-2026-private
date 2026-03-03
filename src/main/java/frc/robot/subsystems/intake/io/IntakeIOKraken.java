@@ -36,6 +36,8 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -46,6 +48,9 @@ import edu.wpi.first.units.measure.Voltage;
 /** The IO hardware implementation for intake hardware interacions with the TalonFX. */
 public class IntakeIOKraken implements IntakeIO {
 	private TalonFX m_rollerTalon, m_armTalon;
+
+	private Debouncer m_rollerMotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
+	private Debouncer m_armMotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
 
 	private VoltageOut m_rollerVoltage = new VoltageOut(0.0).withEnableFOC(kIsFOC),
 			m_armVoltage = new VoltageOut(0).withEnableFOC(kIsFOC);
@@ -126,20 +131,20 @@ public class IntakeIOKraken implements IntakeIO {
 
 	@Override
 	public void updateInputs(IntakeIOInputs inputs) {
-		inputs.rollerMotorConnected = BaseStatusSignal
+		inputs.rollerMotorConnected = m_rollerMotorConnectedDebouncer.calculate(BaseStatusSignal
 				.refreshAll(m_rollerVoltsSignal, m_rollerRpmSignal, m_rollerSupplySignal, m_rollerStatorSignal,
 						m_rollerTempSignal)
-				.isOK();
+				.isOK());
 		inputs.rollerAppliedVoltage = m_rollerVoltsSignal.getValue().in(Volts);
 		inputs.rollerRpm = m_rollerRpmSignal.getValue().in(RPM);
 		inputs.rollerSupplyCurrentAmps = m_rollerSupplySignal.getValue().in(Amps);
 		inputs.rollerStatorCurrentAmps = m_rollerStatorSignal.getValue().in(Amps);
 		inputs.rollerTemperatureCelsius = m_rollerTempSignal.getValue().in(Celsius);
 
-		inputs.armMotorConnected = BaseStatusSignal
+		inputs.armMotorConnected = m_armMotorConnectedDebouncer.calculate(BaseStatusSignal
 				.refreshAll(m_armVoltsSignal, m_armRpmSignal, m_armPositionSignal, m_armSupplySignal, m_armStatorSignal,
 						m_armTempSignal)
-				.isOK();
+				.isOK());
 		inputs.armAppliedVoltage = m_armVoltsSignal.getValue().in(Volts);
 		inputs.armRpm = m_armRpmSignal.getValue().in(RPM);
 		inputs.armPositionDegrees = MathUtil

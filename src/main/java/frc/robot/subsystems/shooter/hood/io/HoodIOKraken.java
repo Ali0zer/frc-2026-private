@@ -33,6 +33,8 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -45,6 +47,8 @@ import edu.wpi.first.units.measure.Voltage;
  */
 public class HoodIOKraken implements HoodIO {
 	private TalonFX m_talon;
+
+	private Debouncer m_motorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
 
 	private VoltageOut m_voltsOut = new VoltageOut(0).withEnableFOC(kIsFOC);
 	private MotionMagicVoltage m_positionVoltage = new MotionMagicVoltage(Units.degreesToRotations(kMinAngleDeg))
@@ -98,9 +102,9 @@ public class HoodIOKraken implements HoodIO {
 
 	@Override
 	public void updateInputs(HoodIOInputs inputs) {
-		inputs.motorConnected = BaseStatusSignal
+		inputs.motorConnected = m_motorConnectedDebouncer.calculate(BaseStatusSignal
 				.refreshAll(m_voltsSignal, m_rpmSignal, m_positionSignal, m_supplySignal, m_statorSignal, m_tempSignal)
-				.isOK();
+				.isOK());
 		inputs.appliedVoltage = m_voltsSignal.getValue().in(Volts);
 		inputs.rpm = m_rpmSignal.getValue().in(RPM);
 		inputs.positionDegrees = MathUtil
