@@ -7,7 +7,8 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class FeederConstants {
 	// Motor IDs
-	public static final int kMotorID = 22;
+	public static final int kMotorID = 50;
+	public static final String kMotorCANBus = "";
 
 	// Control parameters
 	// Voltage when intaking, ~2200 RPM for the NEO v1.1.
@@ -18,7 +19,10 @@ public class FeederConstants {
 	public static final double kGearboxReduction = 0.75; // A 3:4 ratio (I/O)
 
 	// Current limit for the motor
-	public static final int kMotorStatorLimitAmps = 25;
+	public static final double kMotorSupplyLimitAmps = 30;
+	public static final double kMotorStatorLimitAmps = 45;
+
+	public static final boolean kIsFOC = true;
 
 	// Inversions
 	public static final boolean kMotorInverted = false;

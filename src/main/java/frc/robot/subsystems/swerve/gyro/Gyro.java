@@ -1,11 +1,15 @@
 package frc.robot.subsystems.swerve.gyro;
 
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import org.littletonrobotics.junction.Logger;
 
 /** A class representing a gyro. */
 public class Gyro {
 	private GyroIO m_io;
 	private GyroIOInputsAutoLogged m_inputs = new GyroIOInputsAutoLogged();
+
+	private Alert m_gyroDisconnectedAlert = new Alert("The Pigeon 2 has disconnected!", AlertType.kError);
 
 	/**
 	 * Constructs a new Gyro.
@@ -20,6 +24,8 @@ public class Gyro {
 	public void periodic() {
 		m_io.updateInputs(m_inputs);
 		Logger.processInputs("Gyro/Inputs", m_inputs);
+
+		m_gyroDisconnectedAlert.set(!m_inputs.isConnected);
 	}
 
 	/**

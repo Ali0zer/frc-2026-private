@@ -69,7 +69,7 @@ public class SuperstructureConstants {
 
 	// Shot calculator data
 	// Soft-limit of the maximum allowed shot distance
-	public static final double kMaxAllowedShotDistance = 5.63;
+	public static final double kMaxAllowedShotDistance = 8.0; // 5.63;
 	public static final double kMinAllowedShotDistance = 1.17;
 
 	public static final double kRollerRadiusMeters = Units.inchesToMeters(2);
@@ -108,14 +108,14 @@ public class SuperstructureConstants {
 	// Note: make sure to pick high horizontal velocities in order to minimize time
 	// and allow for shooting on the move while going backwards
 
-	public static final double[] kDistanceMap = new double[] { 1.17, 2.14, 3.10, 3.84, 5.12, 5.63 };
+	public static final double[] kDistanceMap = new double[] { 1.17, 2.14, 3.10, 3.84, 5.12, 5.63, 7.0, 8.0 };
 	public static final double[] kHeightDiffMap = new double[] { 3, 3 };
 	public static final double[][] kAngleMap = new double[][] { { 78.0, 78.0 }, { 75.0, 75.0 }, { 69.0, 69.0 },
-			{ 66.0, 66.0 }, { 62.0, 62.0 }, { 53.9, 53.9 } };
+			{ 66.0, 66.0 }, { 62.0, 62.0 }, { 53.9, 53.9 }, { 50.0, 50.0 }, { 45.0, 45.0 } };
 	public static final double[][] kRPMMap = new double[][] { { 185.0 * 30.0 / Math.PI, 185.0 * 30.0 / Math.PI },
 			{ 225.0 * 30.0 / Math.PI, 225.0 * 30.0 / Math.PI }, { 235.0 * 30.0 / Math.PI, 235.0 * 30.0 / Math.PI },
 			{ 245.0 * 30.0 / Math.PI, 245.0 * 30.0 / Math.PI }, { 265.0 * 30.0 / Math.PI, 265.0 * 30.0 / Math.PI },
-			{ 270.0 * 30.0 / Math.PI, 270.0 * 30.0 / Math.PI } };
+			{ 270.0 * 30.0 / Math.PI, 270.0 * 30.0 / Math.PI }, { 2700.0, 2700.0 }, { 2770.0, 2770.0 } };
 
 	public static final double[] kDistanceMapTOF = new double[] { 1.38, 1.88, 3.15, 4.55, 5.68 };
 	public static final double[][] kTimeOfFlightMap = new double[][] { { 0.9 + 0.2, 0.9 + 0.2 },
@@ -154,8 +154,11 @@ public class SuperstructureConstants {
 					.build();
 
 	public static final boolean kLimitVelocityWhenShootingTeleop = true;
-	public static final double kLimitK0 = 0.9;
-	public static final double kLimitK1 = 1.0;
+	public static final double kLimitK0Hub = 0.9;
+	public static final double kLimitK1Hub = 1.0;
+
+	public static final double kLimitK0Pass = 0.86;
+	public static final double kLimitK1Pass = 0.60;
 
 	// TODO Obtain e coefficient via calibration
 	public static final ShooterProjectileType kFuelProjectile = new ShooterProjectileType(0.000485513987, 0.0050949066,

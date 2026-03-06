@@ -10,12 +10,12 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class HoodConstants {
 	// Motor IDs
-	public static final int kMotorID = 21;
+	public static final int kMotorID = 51;
 	public static final String kMotorCANBus = ""; // Main RIO bus
 
 	// Control constants (PID-SVA)
 	// Units: Volts, Degrees, deg/s
-	public static final double kMinAngleDeg = 0, kMaxAngleDeg = 80;
+	public static final double kMinAngleDeg = 0, kMaxAngleDeg = 90;
 	// M_arm = 0.953kg
 	// Voltage gains
 	// R: Resistance, kT: Torque coeff., M: Arm mass, r_com: CG distance (meters), G: Reduction
@@ -24,7 +24,7 @@ public class HoodConstants {
 	public static final double kP = 0.08, kD = 0.0009, kS = 0, kV = 0.034, kG = 0.240;
 	// public static final double kPSim = 0.18, kDSim = 0.006, kSSim = 0, kVSim = 0, kGSim =
 	// 0.3641;
-	public static final double kPSim = 0.08, kDSim = 0.0009, kSSim = 0, kVSim = 0.034, kGSim = 0.240;
+	public static final double kPSim = 0.08, kDSim = 0.0009, kSSim = 0, kVSim = 0.054, kGSim = 0.240;
 	// MotionMagic values
 	public static final double kMotionMagicMaxVelocityDegPerSec = 720 * 3.0;
 	public static final double kMotionMagicAccelerationDegPerSecSq = 1440 * 3.0;
@@ -32,7 +32,7 @@ public class HoodConstants {
 
 	public static final double kMaxTemperature = 80;
 
-	public static final double kExitAngleOffset = 43.02;
+	public static final double kExitAngleOffset = 80;
 
 	public static final double kSysIdVoltageRampRate = 3;
 	public static final double kSysIdVoltageStep = 0.9;

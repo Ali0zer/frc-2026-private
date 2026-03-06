@@ -10,12 +10,6 @@ import static frc.robot.subsystems.swerve.SwerveConstants.ModuleConstants.kDrivi
 import static frc.robot.subsystems.swerve.SwerveConstants.ModuleConstants.kTurningReduction;
 import static frc.robot.subsystems.swerve.SwerveConstants.ModuleConstants.kWheelCircumferenceMeters;
 
-import java.util.Map;
-
-import org.ironmaple.simulation.drivesims.COTS;
-import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
-import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
-
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -24,7 +18,6 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.pathplanner.lib.path.PathConstraints;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -34,6 +27,10 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants.PhysicalParameters;
+import java.util.Map;
+import org.ironmaple.simulation.drivesims.COTS;
+import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
+import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 
 // TODO Needs checking
 
@@ -63,8 +60,8 @@ public final class SwerveConstants {
 		public static final double kMaxAngularSpeed = 4.0 * Math.PI; // rad/s
 
 		// Note: if either is infinite, the other is also considered to be infinite.
-		public static final double kMaxLinearAcceleration = Double.POSITIVE_INFINITY; // m/s^2
-		public static final double kMaxAngularAcceleration = Double.POSITIVE_INFINITY; // rad/s^2
+		// public static final double kMaxLinearAcceleration = Double.POSITIVE_INFINITY; // m/s^2
+		// public static final double kMaxAngularAcceleration = Double.POSITIVE_INFINITY; // rad/s^2
 
 		// Hardware limit speed of the robot
 		public static final double kHardwareMaxSpeed = 4.69;
@@ -87,12 +84,6 @@ public final class SwerveConstants {
 		// Distance from each wheel to the center of the robot
 		public static final double kDrivebaseRadius = Math.hypot(kTrackWidth / 2, kWheelBase / 2);
 
-		// Angular offsets of the modules relative to the chassis in radians
-		public static final double kFrontLeftChassisAngularOffset = 0;
-		public static final double kFrontRightChassisAngularOffset = 0;
-		public static final double kBackLeftChassisAngularOffset = 0;
-		public static final double kBackRightChassisAngularOffset = 0;
-
 		// public static final double kBrownoutVoltage = 6.8;
 		// static {
 		// // Only effective on the roboRIO 2
@@ -100,20 +91,20 @@ public final class SwerveConstants {
 		// }
 
 		// Motor IDs
-		public static final int kFrontLeftDrivingCanId = 9;
-		public static final int kRearLeftDrivingCanId = 3;
-		public static final int kFrontRightDrivingCanId = 4;
-		public static final int kRearRightDrivingCanId = 8;
+		public static final int kFrontLeftDrivingCanId = 11;
+		public static final int kRearLeftDrivingCanId = 31;
+		public static final int kFrontRightDrivingCanId = 21;
+		public static final int kRearRightDrivingCanId = 41;
 
-		public static final int kFrontLeftTurningCanId = 19;
-		public static final int kRearLeftTurningCanId = 13;
-		public static final int kFrontRightTurningCanId = 14;
-		public static final int kRearRightTurningCanId = 18;
+		public static final int kFrontLeftTurningCanId = 12;
+		public static final int kRearLeftTurningCanId = 32;
+		public static final int kFrontRightTurningCanId = 22;
+		public static final int kRearRightTurningCanId = 42;
 
-		public static final int kFrontLeftCANCoderId = -1;
-		public static final int kRearLeftCANCoderId = -1;
-		public static final int kFrontRightCANCoderId = -1;
-		public static final int kRearRightCANCoderId = -1;
+		public static final int kFrontLeftCANCoderId = 13;
+		public static final int kRearLeftCANCoderId = 33;
+		public static final int kFrontRightCANCoderId = 23;
+		public static final int kRearRightCANCoderId = 42;
 
 		public static final int kPigeon2CanId = 1;
 
@@ -140,7 +131,7 @@ public final class SwerveConstants {
 	public static final class ModuleConstants {
 		// Calculations required for conversion factors
 		public static final double kDrivingMotorFreeSpeedRps = DriveMotorConstants.kFreeSpeedRpm / 60.0;
-		// The wheel diameter of the standard Mk5n module is 4in 
+		// The wheel diameter of the standard Mk5n module is 4in
 		// (TODO measure via command)
 		public static final double kWheelDiameterMeters = Units.inchesToMeters(4);
 		public static final double kWheelCircumferenceMeters = kWheelDiameterMeters * Math.PI;
@@ -257,7 +248,8 @@ public final class SwerveConstants {
 					: InvertedValue.CounterClockwise_Positive;
 
 			kDrivingConfig.Slot0 = new Slot0Configs().withKP(kDriveP * kWheelCircumferenceMeters)
-					.withKD(kDriveD * kWheelCircumferenceMeters).withKS(kDriveKs)
+					.withKD(kDriveD * kWheelCircumferenceMeters)
+					.withKS(kDriveKs)
 					.withKV(kDriveKv * kWheelCircumferenceMeters);
 
 			kDrivingConfig.Feedback.SensorToMechanismRatio = kDrivingMotorReduction;
@@ -274,6 +266,7 @@ public final class SwerveConstants {
 			kTurningConfig.Slot0 = new Slot0Configs().withKP(kTurnP * 2 * Math.PI).withKD(kTurnD * 2 * Math.PI);
 			kTurningConfig.ClosedLoopGeneral.ContinuousWrap = true;
 
+			// ID is not set here as it's set per-module
 			kTurningConfig.Feedback.FeedbackSensorSource = kTurnFeedbackSource;
 			// kTurningConfig.Feedback.SensorToMechanismRatio = kTurningReduction;
 			kTurningConfig.Feedback.RotorToSensorRatio = kTurningReduction;

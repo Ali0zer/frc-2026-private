@@ -131,20 +131,22 @@ public class IntakeIOKraken implements IntakeIO {
 
 	@Override
 	public void updateInputs(IntakeIOInputs inputs) {
-		inputs.rollerMotorConnected = m_rollerMotorConnectedDebouncer.calculate(BaseStatusSignal
-				.refreshAll(m_rollerVoltsSignal, m_rollerRpmSignal, m_rollerSupplySignal, m_rollerStatorSignal,
-						m_rollerTempSignal)
-				.isOK());
+		inputs.rollerMotorConnected = m_rollerMotorConnectedDebouncer.calculate(
+				BaseStatusSignal
+						.refreshAll(m_rollerVoltsSignal, m_rollerRpmSignal, m_rollerSupplySignal, m_rollerStatorSignal,
+								m_rollerTempSignal)
+						.isOK());
 		inputs.rollerAppliedVoltage = m_rollerVoltsSignal.getValue().in(Volts);
 		inputs.rollerRpm = m_rollerRpmSignal.getValue().in(RPM);
 		inputs.rollerSupplyCurrentAmps = m_rollerSupplySignal.getValue().in(Amps);
 		inputs.rollerStatorCurrentAmps = m_rollerStatorSignal.getValue().in(Amps);
 		inputs.rollerTemperatureCelsius = m_rollerTempSignal.getValue().in(Celsius);
 
-		inputs.armMotorConnected = m_armMotorConnectedDebouncer.calculate(BaseStatusSignal
-				.refreshAll(m_armVoltsSignal, m_armRpmSignal, m_armPositionSignal, m_armSupplySignal, m_armStatorSignal,
-						m_armTempSignal)
-				.isOK());
+		inputs.armMotorConnected = m_armMotorConnectedDebouncer.calculate(
+				BaseStatusSignal
+						.refreshAll(m_armVoltsSignal, m_armRpmSignal, m_armPositionSignal, m_armSupplySignal,
+								m_armStatorSignal, m_armTempSignal)
+						.isOK());
 		inputs.armAppliedVoltage = m_armVoltsSignal.getValue().in(Volts);
 		inputs.armRpm = m_armRpmSignal.getValue().in(RPM);
 		inputs.armPositionDegrees = MathUtil

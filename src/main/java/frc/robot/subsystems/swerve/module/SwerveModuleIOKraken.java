@@ -89,7 +89,7 @@ public class SwerveModuleIOKraken implements SwerveModuleIO {
 	private double m_rotToMeters;
 
 	/**
-	 * Constructs a new SwerveModuleIOTalonFX.
+	 * Constructs a new SwerveModuleIOKraken.
 	 *
 	 * @param idx The module ID. 0 = FL, 1 = FR, 2 = BL, 3 = BR.
 	 */
@@ -169,12 +169,11 @@ public class SwerveModuleIOKraken implements SwerveModuleIO {
 		m_odometryTurnPositionsRevs = odometryThread.registerSignal(m_turnTalon, m_turnPosition);
 
 		// Adjust update frequencies
-		BaseStatusSignal.setUpdateFrequencyForAll(SwerveConstants.kOdometryFrequencyHz, m_drivePosition,
-				m_driveVelocity);
+		BaseStatusSignal.setUpdateFrequencyForAll(SwerveConstants.kOdometryFrequencyHz, m_drivePosition, m_turnPosition,
+				m_turnAbsolutePosition);
 		BaseStatusSignal.setUpdateFrequencyForAll(50, m_driveAppliedVolts, m_driveSupplyCurrentAmps,
-				m_driveStatorCurrentAmps, m_driveTemperatureCelsius, m_turnPosition, m_turnAbsolutePosition,
-				m_turnVelocity, m_turnAppliedVolts, m_turnSupplyCurrentAmps, m_turnStatorCurrentAmps,
-				m_turnTemperatureCelsius);
+				m_driveStatorCurrentAmps, m_driveTemperatureCelsius, m_driveVelocity, m_turnVelocity,
+				m_turnAppliedVolts, m_turnSupplyCurrentAmps, m_turnStatorCurrentAmps, m_turnTemperatureCelsius);
 		retryUntilOk(() -> ParentDevice.optimizeBusUtilizationForAll(m_driveTalon, m_turnTalon), 5,
 				"Optimizing CAN bus utilization for swerve module #" + idx);
 	}
@@ -207,19 +206,19 @@ public class SwerveModuleIOKraken implements SwerveModuleIO {
 		inputs.turnStatorCurrentAmps = m_turnStatorCurrentAmps.getValueAsDouble();
 		inputs.turnTemperatureCelsius = m_turnTemperatureCelsius.getValueAsDouble();
 
+		// Update CANCoder inputs
+		inputs.cancoderConnected = m_cancoderConnectedDebouncer
+				.calculate(BaseStatusSignal.refreshAll(m_turnAbsolutePosition).isOK());
+		inputs.turnAbsolutePosition = Rotation2d.fromRotations(m_turnAbsolutePosition.getValueAsDouble());
+
 		// Update odometry inputs
-		inputs.odometryTimestamps = m_odometryTimestamps.stream().mapToDouble((v) -> v).toArray();
+		inputs.odometryTimestamps = m_odometryTimestamps.stream().mapToDouble(v -> v).toArray();
 		inputs.odometryDrivePositionsMeters = m_odometryDrivePositionsRevs.stream()
 				.mapToDouble(value -> value * m_rotToMeters)
 				.toArray();
 		inputs.odometryTurnPositions = m_odometryTurnPositionsRevs.stream()
 				.map(value -> Rotation2d.fromRotations(value))
 				.toArray(Rotation2d[]::new);
-
-		// Update CANCoder inputs
-		inputs.cancoderConnected = m_cancoderConnectedDebouncer
-				.calculate(BaseStatusSignal.refreshAll(m_turnAbsolutePosition).isOK());
-		inputs.turnAbsolutePosition = Rotation2d.fromRotations(m_turnAbsolutePosition.getValueAsDouble());
 
 		// Reset queues
 		m_odometryTimestamps.clear();

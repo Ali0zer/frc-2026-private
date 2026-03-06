@@ -8,6 +8,8 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -24,6 +26,8 @@ public class GyroIOPigeon2 implements GyroIO {
 	private StatusSignal<Angle> m_yawSignal;
 	private StatusSignal<AngularVelocity> m_angularVelocitySignal;
 	private StatusSignal<Angle> m_pitchSignal;
+
+	private Debouncer m_disconnectDebounce = new Debouncer(0.5, DebounceType.kFalling);
 
 	/**
 	 * Constructs a new GyroIOPigeon2.
@@ -60,6 +64,8 @@ public class GyroIOPigeon2 implements GyroIO {
 
 	@Override
 	public void updateInputs(GyroIOInputsAutoLogged inputs) {
+		inputs.isConnected = m_disconnectDebounce
+				.calculate(BaseStatusSignal.refreshAll(m_yawSignal, m_angularVelocitySignal, m_pitchSignal).isOK());
 		inputs.yawDegrees = getYawDegrees();
 		inputs.omegaDegreesPerSecond = getOmegaDegreesPerSecond();
 		inputs.pitchDegrees = m_pitchSignal.getValueAsDouble();

@@ -26,7 +26,7 @@ import org.littletonrobotics.junction.Logger;
  * instantiations.
  */
 public class SwerveModule {
-	private static final int kDSOverheatSpamCount = 10;
+	private static final int kDSOverheatSpamCount = 2;
 
 	private SwerveModuleIO m_io;
 	private SwerveModuleIOInputsAutoLogged m_inputs = new SwerveModuleIOInputsAutoLogged();
@@ -116,6 +116,9 @@ public class SwerveModule {
 		// No overheating
 		if (!m_driveTempAlert.get() && !m_steerTempAlert.get()) m_overheatEStop = false;
 
+		Logger.recordOutput("Drive/Module" + m_idx + "DriveOverheat", m_driveTempAlert.get());
+		Logger.recordOutput("Drive/Module" + m_idx + "SteerOverheat", m_steerTempAlert.get());
+
 		Tracer.finish("SwerveModule#" + m_idx + "_Periodic");
 	}
 
@@ -181,7 +184,9 @@ public class SwerveModule {
 	 *
 	 * @return The module position.
 	 */
-	public SwerveModulePosition getOdometryPosition() { return new SwerveModulePosition(m_inputs.drivePositionMeters, m_inputs.turnPosition); }
+	public SwerveModulePosition getOdometryPosition() {
+		return new SwerveModulePosition(m_inputs.drivePositionMeters, m_inputs.turnPosition);
+	}
 
 	/**
 	 * Returns the current module state.

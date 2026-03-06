@@ -10,7 +10,7 @@ public class ClimbConstants {
 	public static final boolean kHasClimb = false;
 
 	// Motor ID
-	public static final int kMotorID = 3;
+	public static final int kMotorID = 15;
 	public static final String kMotorCANBus = ""; // Main RIO bus
 
 	// Control parameters
@@ -39,7 +39,7 @@ public class ClimbConstants {
 	// Simulation data
 	public static final DCMotor kGearbox = DCMotor.getKrakenX60Foc(1);
 	// Gearbox reduction
-	public static final double kGearboxReduction = 250; // A 250:1 ratio (I/O)
+	public static final double kGearboxReduction = 125; // A 125:1 ratio (I/O)
 	// 19mm spool diameter
 	public static final double kSpoolRadius = 0.019 / 2.0;
 	public static final double kMaxClimberHeight = 0.135;

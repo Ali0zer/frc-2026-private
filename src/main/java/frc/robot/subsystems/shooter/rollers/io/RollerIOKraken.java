@@ -32,7 +32,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.units.measure.Angle;
@@ -122,9 +121,9 @@ public class RollerIOKraken implements RollerIO {
 
 	@Override
 	public void updateInputs(RollerIOInputs inputs) {
-		inputs.mainMotorConnected = m_mainMotorConnectedDebouncer.calculate(BaseStatusSignal
-				.refreshAll(m_voltsSignal, m_rpmSignal, m_supplySignal, m_statorSignal, m_tempSignal)
-				.isOK());
+		inputs.mainMotorConnected = m_mainMotorConnectedDebouncer.calculate(
+				BaseStatusSignal.refreshAll(m_voltsSignal, m_rpmSignal, m_supplySignal, m_statorSignal, m_tempSignal)
+						.isOK());
 		inputs.appliedVoltageMain = m_voltsSignal.getValue().in(Volts);
 		inputs.rpmMain = m_rpmSignal.getValue().in(RPM);
 		inputs.positionRevsMain = m_positionSignal.getValue().in(Revolutions);
@@ -132,10 +131,11 @@ public class RollerIOKraken implements RollerIO {
 		inputs.statorCurrentAmpsMain = Math.abs(m_statorSignal.getValue().in(Amps));
 		inputs.temperatureCelsiusMain = m_tempSignal.getValue().in(Celsius);
 
-		inputs.followerMotorConnected = m_followerMotorConnectedDebouncer.calculate(BaseStatusSignal
-				.refreshAll(m_voltsSignalFollower, m_rpmSignalFollower, m_supplySignalFollower, m_statorSignalFollower,
-						m_tempSignalFollower)
-				.isOK());
+		inputs.followerMotorConnected = m_followerMotorConnectedDebouncer.calculate(
+				BaseStatusSignal
+						.refreshAll(m_voltsSignalFollower, m_rpmSignalFollower, m_supplySignalFollower,
+								m_statorSignalFollower, m_tempSignalFollower)
+						.isOK());
 		inputs.appliedVoltageFollower = m_voltsSignalFollower.getValue().in(Volts);
 		inputs.rpmFollower = m_rpmSignalFollower.getValue().in(RPM);
 		inputs.positionRevsFollower = m_positionSignalFollower.getValue().in(Revolutions);

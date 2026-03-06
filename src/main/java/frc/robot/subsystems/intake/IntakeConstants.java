@@ -7,9 +7,9 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class IntakeConstants {
 	// Motor IDs
-	public static final int kRollerMotorID = 30;
+	public static final int kRollerMotorID = 25;
 	public static final String kRollerMotorCANBus = ""; // Main RIO bus
-	public static final int kArmMotorID = 31;
+	public static final int kArmMotorID = 26;
 	public static final String kArmMotorCANBus = "";
 
 	// Control parameters

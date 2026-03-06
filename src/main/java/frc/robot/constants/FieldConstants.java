@@ -45,17 +45,17 @@ public class FieldConstants {
 	public static final Pose2d kRobotPoseLeftBlue = new Pose2d(3.589, 5.558, Rotation2d.kPi);
 
 	// Welded
-	// Adding 2x ball diameter on each side to avoid any intersect
+	// Adding 5x ball diameter on each side to avoid any intersect
 	public static final Translation2d kBlueAllianceNetRightPoint = new Translation2d(Units.inchesToMeters(214.57),
-			Units.inchesToMeters(129.635 - kFuelDiameterNominal * 2.0));
+			Units.inchesToMeters(129.635 - kFuelDiameterNominal * 5.0));
 	public static final Translation2d kBlueAllianceNetLeftPoint = new Translation2d(Units.inchesToMeters(214.57),
-			Units.inchesToMeters(188.045 + kFuelDiameterNominal * 2.0));
-	// 8in cut off from each side to avoid issues with accidentally throwing fuel
+			Units.inchesToMeters(188.045 + kFuelDiameterNominal * 5.0));
+	// 16in cut off from each side to avoid issues with accidentally throwing fuel
 	// out of the field
 	public static final Translation2d kBlueAllianceZoneFuelPassLineRightPoint = new Translation2d(
-			Units.inchesToMeters(106.606), Units.inchesToMeters(8.0));
+			Units.inchesToMeters(106.606), Units.inchesToMeters(16.0));
 	public static final Translation2d kBlueAllianceZoneFuelPassLineLeftPoint = new Translation2d(
-			Units.inchesToMeters(106.606), kFieldWith - Units.inchesToMeters(8.0));
+			Units.inchesToMeters(106.606), kFieldWith - Units.inchesToMeters(16.0));
 
 	/**
 	 * Adds the field type suffix to the path name.

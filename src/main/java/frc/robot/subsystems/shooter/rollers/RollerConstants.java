@@ -9,8 +9,8 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class RollerConstants {
 	// Motor IDs
-	public static final int kMainMotorID = 20;
-	public static final int kFollowerMotorID = 22;
+	public static final int kMainMotorID = 53;
+	public static final int kFollowerMotorID = 54;
 	public static final String kMotorCANBus = ""; // Main RIO bus
 
 	// Control constants (PID-SVA)

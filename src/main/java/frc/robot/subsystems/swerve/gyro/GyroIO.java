@@ -9,6 +9,7 @@ public interface GyroIO {
 	/** The inputs class for a Gyro. */
 	@AutoLog
 	public static class GyroIOInputs {
+		public boolean isConnected;
 		public double yawDegrees;
 		public double omegaDegreesPerSecond;
 		public double pitchDegrees;

@@ -80,6 +80,7 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 	private LoggedDashboardChooser<AutoObjective> m_objective2Chooser;
 	private LoggedDashboardChooser<AutoBumpCrossingOverride> m_forceNeutralCrossSideOverride;
 	private LoggedDashboardChooser<Double> m_adaptiveNeutralTimeBudgetChooser;
+	private LoggedDashboardChooser<Double> m_objective1EndCooldown;
 	private LoggedDashboardChooser<AutoClimbSide> m_climbSideChooser;
 	private LoggedDashboardChooser<Boolean> m_passThroughTowerObj2;
 	private LoggedDashboardChooser<Boolean> m_passThroughTowerObj1;
@@ -139,6 +140,14 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 		m_objective1Chooser.addOption("Score Neutral (Primary - Loop Over)", AutoObjective.kScoreNeutralLoopOver);
 		m_objective1Chooser.addOption("Score Neutral (Primary - Sweep Over)", AutoObjective.kScoreNeutralSweepOver);
 		m_objective1Chooser.addOption("Score Neutral (Primary - Adaptive)", AutoObjective.kScoreNeutralAdaptive);
+
+		m_objective1EndCooldown = new LoggedDashboardChooser<>("Autonomous Objective #1 to #2 Cooldown");
+		m_objective1EndCooldown.addDefaultOption("0 seconds", 0.0);
+		m_objective1EndCooldown.addOption("1 seconds", 1.0);
+		m_objective1EndCooldown.addOption("2 seconds", 2.0);
+		m_objective1EndCooldown.addOption("3 seconds", 3.0);
+		m_objective1EndCooldown.addOption("4 seconds", 4.0);
+		m_objective1EndCooldown.addOption("5 seconds", 5.0);
 
 		m_objective2Chooser = new LoggedDashboardChooser<>("Autonomous Objective #2");
 		m_objective2Chooser.addDefaultOption("None", AutoObjective.kNone);

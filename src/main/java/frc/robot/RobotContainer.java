@@ -57,8 +57,8 @@ import frc.robot.subsystems.intake.io.IntakeIOKraken;
 import frc.robot.subsystems.intake.io.IntakeIOSim;
 import frc.robot.subsystems.shooter.feeder.Feeder;
 import frc.robot.subsystems.shooter.feeder.io.FeederIO;
+import frc.robot.subsystems.shooter.feeder.io.FeederIOKraken;
 import frc.robot.subsystems.shooter.feeder.io.FeederIOSim;
-import frc.robot.subsystems.shooter.feeder.io.FeederIOSparkMax;
 import frc.robot.subsystems.shooter.hood.Hood;
 import frc.robot.subsystems.shooter.hood.io.HoodIO;
 import frc.robot.subsystems.shooter.hood.io.HoodIOKraken;
@@ -278,11 +278,15 @@ public class RobotContainer {
 				SwerveConstants.kDynamicTestTimeLimit, SwerveConstants.kQuasistaticTestTimeLimit));
 		m_testChooser.addOption("Swerve Drive Wheel COF Characterization",
 				() -> DriveCommands.identifyWheelCOF(swerve));
+
+		// TODO Note: use trench tags, make sure to measure from robot center
 		// Vision Calibration
-		m_testChooser.addOption("Vision Camera Offset Calibration (Right LL)", () -> DriveCommands
-				.calibrateVisionCameraOffset(swerve, VisionConstants.kLLIndex_Right, Rotation2d.kPi));
-		m_testChooser.addOption("Vision Camera Offset Calibration (Left LL)", () -> DriveCommands
-				.calibrateVisionCameraOffset(swerve, VisionConstants.kLLIndex_Left, Rotation2d.kZero));
+		m_testChooser.addOption("Vision Camera Offset Calibration (Right LL)",
+				() -> DriveCommands.calibrateVisionCameraOffset(swerve, VisionConstants.kLLIndex_Right,
+						Rotation2d.fromDegrees(-150), VisionConstants.kCameraCalibTagDist));
+		m_testChooser.addOption("Vision Camera Offset Calibration (Left LL)",
+				() -> DriveCommands.calibrateVisionCameraOffset(swerve, VisionConstants.kLLIndex_Left,
+						Rotation2d.fromDegrees(-210), VisionConstants.kCameraCalibTagDist));
 
 		// Add mechanism tests
 		m_testChooser.addOption("SysId Turret",
@@ -421,7 +425,7 @@ public class RobotContainer {
 	private void initShooter() {
 		switch (Robot.kRobotMode) {
 			case kReal:
-				feeder = new Feeder(new FeederIOSparkMax());
+				feeder = new Feeder(new FeederIOKraken());
 				hood = new Hood(new HoodIOKraken());
 				rollers = new Rollers(new RollerIOKraken());
 				turret = new Turret(new TurretIOKraken());

@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -374,73 +375,6 @@ public class DriveCommands {
 	// Angular precision: 0.0001-0.001+ deg precision.
 
 	/**
-	 * Calibrates all vision camera offsets by collecting samples for each camera and averaging
-	 * them. Start by putting the robot exactly 1m (measured perpendicularly) away from the tag.
-	 *
-	 * @param drive The swerve subsystem.
-	 * @return The calibration command.
-	 */
-	public static Command calibrateVisionAllCameraOffsets(SwerveSubsystem drive) {
-		List<List<Pose3d>> samples = new ArrayList<>();
-		LibVisionSubsystem vision = drive.getVisionSubsystem();
-
-		int numCams = vision.getCamerasIO().length;
-		Container<Boolean> hasSampled = new Container<Boolean>(false);
-		IntegerContainer currentIdx = new IntegerContainer(0), currentSample = new IntegerContainer(0);
-		// Set up the samples list
-		for (int i = 0; i < numCams; i++)
-			samples.add(new ArrayList<>());
-
-		return Commands.sequence(Commands.runOnce(() -> {
-			System.out.println("Starting vision camera offset calibration in " + kVisionCalStartDelay + "  seconds...");
-			System.out.println("**** Make sure the robot is stationary and each camera only sees 1 target! ****");
-		}), Commands.waitSeconds(kVisionCalStartDelay), Commands.runOnce(drive::stop),
-				Commands.runOnce(() -> { System.out.println("Collecting camera samples, this may take a moment..."); }),
-				Commands.run(() -> {
-					Optional<Pose3d> tagPose = LibVisionSubsystem.kLayout
-							.getTagPose(vision.getCameraInputs()[currentIdx.value].latestTargetObservation.tagId());
-					if (tagPose.isPresent()) {
-						Pose3d sample = VisionCalibration.computeCameraInRobot(
-								PoseUtils.offsetPerpendicular(tagPose.get(), 1), tagPose.get(),
-								vision.getCameraInputs()[currentIdx.value].latestTargetObservation.camToTarget());
-						samples.get(currentIdx.value).add(sample);
-					}
-
-					if (++currentSample.value >= kVisionCalSampleCountPerCam) {
-						currentSample.value = 0;
-						currentIdx.value++;
-						System.out.println("Collected " + (samples.get(currentIdx.value - 1).size())
-								+ " samples for Camera #" + currentIdx.value + " [Failed samples: "
-								+ (kVisionCalSampleCountPerCam - samples.get(currentIdx.value - 1).size()) + "]");
-						hasSampled.val = currentIdx.value >= numCams;
-					}
-				}).until(() -> hasSampled.val)).finallyDo(() -> {
-					NumberFormat formatter = new DecimalFormat("#0.00000");
-					System.out.println("********** CAMERA OFFSET CALIBRATION RESULTS **********");
-					for (int i = 0; i < numCams; i++) {
-						if (samples.get(i).size() == 0) {
-							System.out.println(
-									"No valid samples collected for Camera #" + (i + 1) + ". Re-run the test.");
-							continue;
-						}
-						var result = VisionCalibration.averageCameraInRobotSamples(samples.get(i));
-						System.out.println("Camera #" + (i + 1) + " Offset (m, rad): ");
-						System.out.println("\tX: " + formatter.format(result.getX()) + " m");
-						System.out.println("\tY: " + formatter.format(result.getY()) + " m");
-						System.out.println("\tZ: " + formatter.format(result.getZ()) + " m");
-						System.out.println("\tRoll (x-rot): " + formatter.format(result.getRotation().getX())
-								+ " rad / " + formatter.format(Units.radiansToDegrees(result.getRotation().getX()))
-								+ " deg");
-						System.out.println("\tPitch (y-rot): " + formatter.format(result.getRotation().getY())
-								+ " rad / " + formatter.format(Units.radiansToDegrees(result.getRotation().getY()))
-								+ " deg");
-						System.out.println("\tYaw (z-rot): " + formatter.format(result.getRotation().getZ()) + " rad / "
-								+ formatter.format(Units.radiansToDegrees(result.getRotation().getZ())) + " deg");
-					}
-				});
-	}
-
-	/**
 	 * Calibrates the specified vision camera's offset by collecting samples for each camera and
 	 * averaging them.
 	 *
@@ -450,9 +384,11 @@ public class DriveCommands {
 	 *                      camera is being calibrated, this should be 180 as the robot faces
 	 *                      towards the tag, if a rear camera is being calibrated, this should be 0
 	 *                      as the robot faces away from the tag.
+	 * @param tagDist       The perpendicular distance from the center of the robot to the tag.
 	 * @return The calibration command.
 	 */
-	public static Command calibrateVisionCameraOffset(SwerveSubsystem drive, int camIdx, Rotation2d angularOffset) {
+	public static Command calibrateVisionCameraOffset(SwerveSubsystem drive, int camIdx, Rotation2d angularOffset,
+			double tagDist) {
 		List<Pose3d> samples = new ArrayList<>();
 		LibVisionSubsystem vision = drive.getVisionSubsystem();
 
@@ -468,8 +404,12 @@ public class DriveCommands {
 					Optional<Pose3d> tagPose = LibVisionSubsystem.kLayout
 							.getTagPose(vision.getCameraInputs()[camIdx].latestTargetObservation.tagId());
 					if (tagPose.isPresent()) {
+						Pose3d offseted = PoseUtils.offsetPerpendicular(tagPose.get(), tagDist);
+						offseted = new Pose3d(offseted.getTranslation(),
+								offseted.getRotation().plus(new Rotation3d(angularOffset)));
 						Pose3d sample = VisionCalibration.computeCameraInRobot(
-								PoseUtils.offsetPerpendicular(tagPose.get(), 1).rotateBy(new Rotation3d(angularOffset)),
+								new Pose3d(new Translation3d(offseted.getX(), offseted.getY(), 0),
+										offseted.getRotation()),
 								tagPose.get(), vision.getCameraInputs()[camIdx].latestTargetObservation.camToTarget());
 						samples.add(sample);
 					}

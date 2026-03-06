@@ -8,7 +8,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class TurretConstants {
 	// Motor IDs
-	public static final int kMotorID = 41;
+	public static final int kMotorID = 52;
 	public static final String kMotorCANBus = ""; // Main RIO bus
 
 	// NOTE: All angles are bound within (-180, 180)

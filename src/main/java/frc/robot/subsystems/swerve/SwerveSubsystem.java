@@ -4,8 +4,6 @@ import static com.bobcats.lib.utils.Utils.roundDigits;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.subsystems.swerve.SwerveConstants.DriveConstants.kDriveKinematics;
-import static frc.robot.subsystems.swerve.SwerveConstants.DriveConstants.kMaxAngularAcceleration;
-import static frc.robot.subsystems.swerve.SwerveConstants.DriveConstants.kMaxLinearAcceleration;
 import static frc.robot.subsystems.swerve.SwerveConstants.DriveConstants.kSkewCorrectionFactor;
 
 import com.bobcats.lib.auto.LocalADStarAK;
@@ -25,7 +23,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -40,7 +37,6 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -89,15 +85,6 @@ public class SwerveSubsystem extends SubsystemBase {
 	// Odometry thread
 	public static Lock odometryLock = new ReentrantLock();
 	public static TalonFXOdometryThread odometryThread = new TalonFXOdometryThread();
-
-	// Accelerations
-	private ChassisSpeeds m_accelField; // Accel represented by a ChassisSpeeds
-	private ChassisSpeeds m_lastChassisSpeeds = new ChassisSpeeds();
-	private double m_lastTick = -1;
-
-	private final SlewRateLimiter m_xLimiter = new SlewRateLimiter(kMaxLinearAcceleration),
-			m_yLimiter = new SlewRateLimiter(kMaxLinearAcceleration),
-			m_rotLimiter = new SlewRateLimiter(kMaxAngularAcceleration);
 
 	private final Consumer<Pose2d> m_resetSim;
 
@@ -158,6 +145,9 @@ public class SwerveSubsystem extends SubsystemBase {
 		// Configure auto builder
 		AutoBuilder.configure(this::getFilteredPose, this::resetOdometry, this::getChassisSpeedsRobotRelative,
 				(speeds, ff) -> {
+					// Process the speeds
+					speeds = correctSkew(speeds);
+					speeds = ChassisSpeeds.discretize(speeds, Constants.kLoopPeriodSeconds);
 					SwerveModuleState[] states = DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds);
 
 					// Set desired module states
@@ -252,13 +242,6 @@ public class SwerveSubsystem extends SubsystemBase {
 		// SmartDashboard.putNumber("Chassis Rotation (deg)", roundDigits(getHeading(),
 		// 1));
 
-		// Calculate acceleration
-		double now = Timer.getFPGATimestamp();
-		m_accelField = getChassisSpeedsFieldRelative().minus(m_lastChassisSpeeds)
-				.div(now - (m_lastTick == -1 ? now : m_lastTick));
-		m_lastChassisSpeeds = getChassisSpeedsFieldRelative();
-		m_lastTick = now;
-
 		// Update the odometry and pose estimate
 
 		// Since all odometry states are sampled at the same timestamps, we can just use any module's
@@ -328,7 +311,6 @@ public class SwerveSubsystem extends SubsystemBase {
 		if (fieldRelative) speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getRobotRotation());
 
 		speeds = correctSkew(speeds);
-		speeds = limitAcceleration(speeds);
 		speeds = ChassisSpeeds.discretize(speeds, Constants.kLoopPeriodSeconds);
 
 		var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds);
@@ -473,14 +455,6 @@ public class SwerveSubsystem extends SubsystemBase {
 	}
 
 	/**
-	 * Returns the field-relative chassis acceleration, represented by a ChassisSpeeds object.
-	 *
-	 * @return The chassis acceleration.
-	 */
-	@AutoLogOutput(key = "Drive/ChassisAcceleration_FieldRelative")
-	public ChassisSpeeds getAccelerationFieldRelative() { return m_accelField; }
-
-	/**
 	 * Returns the heading of the robot.
 	 *
 	 * @return The robot's heading in degrees, from -180 to 180.
@@ -601,15 +575,5 @@ public class SwerveSubsystem extends SubsystemBase {
 			if (difference < minDifference) { minDifference = difference; closestIndex = j; }
 		}
 		return gyroPositions[closestIndex];
-	}
-
-	private ChassisSpeeds limitAcceleration(ChassisSpeeds robotRelativeSpeeds) {
-		// Make sure we actually want to limit acceleration, otherwise throws NaN's.
-		if (Double.isInfinite(kMaxLinearAcceleration) || Double.isInfinite(kMaxAngularAcceleration))
-			return robotRelativeSpeeds;
-		// Return limited speeds
-		return new ChassisSpeeds(m_xLimiter.calculate(robotRelativeSpeeds.vxMetersPerSecond),
-				m_yLimiter.calculate(robotRelativeSpeeds.vyMetersPerSecond),
-				m_rotLimiter.calculate(robotRelativeSpeeds.omegaRadiansPerSecond));
 	}
 }

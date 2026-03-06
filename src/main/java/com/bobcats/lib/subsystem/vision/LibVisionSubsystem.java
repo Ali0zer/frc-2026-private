@@ -38,8 +38,7 @@ public class LibVisionSubsystem extends SubsystemBase {
 
 	/** The AprilTag layout of the field. */
 	// TODO Change before US regional
-	public static final AprilTagFieldLayout kLayout = AprilTagFieldLayout
-			.loadField(AprilTagFields.k2026RebuiltAndymark);
+	public static AprilTagFieldLayout kLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 	/** The region representing the rectangular field. */
 	// public static final RectangularRegion kFieldRegion = new RectangularRegion(new
 	// Translation2d(0.0, 0.0),

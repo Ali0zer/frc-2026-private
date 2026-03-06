@@ -6,6 +6,7 @@ import static frc.robot.subsystems.climb.ClimbConstants.kAutonClimbSequenceRetra
 import static frc.robot.subsystems.climb.ClimbConstants.kHasClimb;
 import static frc.robot.subsystems.shooter.hood.HoodConstants.kExitAngleOffset;
 import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationAngle;
+import static frc.robot.subsystems.shooter.turret.TurretConstants.kTurretPivotPointCenter;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kAverageShotTime;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kChassisStateSwitchDebounce;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kClimbPitchAngleDiffThreshold;
@@ -24,8 +25,10 @@ import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntak
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeFlashOffColor;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeFlashRollingColor;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeRollerVelocityThreshold;
-import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK0;
-import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK1;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK0Hub;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK0Pass;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK1Hub;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK1Pass;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitVelocityWhenShootingTeleop;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kPassFuelAcceptDistance;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kPassTrajOptSteps;
@@ -61,6 +64,7 @@ import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -153,6 +157,10 @@ public class Superstructure extends SubsystemBase {
 	private boolean m_isClimbPathfinding = false;
 	private LoggedDashboardChooser<Boolean> m_isFallbackScoring;
 
+	// For testing and calib purposes, overriding setpoints
+	public boolean setpointOverride = false;
+	public LoggedDashboardChooser<Boolean> overrideRollerSetpointChooser, overrideHoodSetpointChooser;
+
 	private boolean m_hasClimbed = false;
 	private boolean m_isClimbRight = true;
 
@@ -185,6 +193,8 @@ public class Superstructure extends SubsystemBase {
 
 	private boolean m_isDashboardIntakeStateFlashOn = false;
 	private int m_intakeFlashCycle;
+
+	private OptimizedLine m_latestPassLineOpt;
 
 	// Subsystems
 	private final Feeder m_feeder;
@@ -223,6 +233,14 @@ public class Superstructure extends SubsystemBase {
 		m_isFallbackScoring = new LoggedDashboardChooser<>("Fallback Scoring Mode");
 		m_isFallbackScoring.addDefaultOption("Disabled", false);
 		m_isFallbackScoring.addOption("Enabled", true);
+
+		overrideHoodSetpointChooser = new LoggedDashboardChooser<>("Test Override Hood Setpoints");
+		overrideHoodSetpointChooser.addDefaultOption("Disabled", false);
+		overrideHoodSetpointChooser.addOption("Enabled", true);
+
+		overrideRollerSetpointChooser = new LoggedDashboardChooser<>("Test Override Roller Setpoints");
+		overrideRollerSetpointChooser.addDefaultOption("Disabled", false);
+		overrideRollerSetpointChooser.addOption("Enabled", true);
 
 		try {
 			m_climberAlignPathRightPre = PathPlannerPath.fromPathFile(path(kClimberPreAlignPathRight));
@@ -387,15 +405,13 @@ public class Superstructure extends SubsystemBase {
 	public ChassisState getChassisState() { return m_chassisState; }
 
 	/**
-	 * Returns whether intake mechanisms are at their respective setpoints.
+	 * Returns whether mechanisms are at their respective setpoints.
 	 *
-	 * @return Whether intake mechanisms are at their respective setpoints.
+	 * @return Whether mechanisms are at their respective setpoints.
 	 */
 	public boolean areRumbleMechanismsAtSetpoints() {
-		return m_intake.isArmNearSetpoint(); /* m_backpack.isNearSetpoint() && */
-		/*
-		 * && m_hood.isNearSetpoint() && m_rollers.isNearSetpoint() && m_turret.isNearSetpoint()
-		 */
+		return m_intake.isArmNearSetpoint() && m_hood.isNearSetpoint() && m_rollers.isNearSetpoint()
+				&& m_turret.isNearSetpoint();
 	}
 
 	// Primary State Commands //
@@ -565,7 +581,8 @@ public class Superstructure extends SubsystemBase {
 	public Command objectivePassFuelAlliance() {
 		return Commands.runOnce(() -> m_actionState = ActionState.kPassFuelAlliance)
 				.andThen(new DeferredCommand(
-						() -> shooterCommand(this::getBestAllianceFuelPassLocation, () -> !isFallbackScoring()),
+						() -> shooterCommand(this::getBestAllianceFuelPassLocation,
+								() -> !isFallbackScoring() && m_latestPassLineOpt.success()),
 						Set.of(m_turret, m_rollers, m_hood, m_feeder)))
 				.onlyWhile(() -> m_isObjectiveOriented /* && m_primaryState != PrimaryState.kClimbing */
 						&& m_actionState == ActionState.kPassFuelAlliance /* ActionState.kActionIdle */
@@ -651,11 +668,17 @@ public class Superstructure extends SubsystemBase {
 	 * @return The chassis speed limit.
 	 */
 	public double getChassisLimitVelocity() {
-		if (kLimitVelocityWhenShootingTeleop && m_actionState == ActionState.kScoreFuelHub
-				&& (DriverStation.isTeleop() || DriverStation.isTest())) {
+		if (!kLimitVelocityWhenShootingTeleop || !(DriverStation.isTeleop() || DriverStation.isTest()))
+			return DriveConstants.kMaxSpeedMetersPerSecond;
+		if (m_actionState == ActionState.kScoreFuelHub) {
 			double d = getAllianceHubLocation().toTranslation2d()
 					.getDistance(m_swerve.getFilteredPose().getTranslation());
-			return kLimitK0 + kLimitK1 * d * d / (1 + d * d);
+			return kLimitK0Hub + kLimitK1Hub * d * d / (1 + d * d);
+		} else if (m_actionState == ActionState.kPassFuelAlliance) {
+			double d = m_latestPassLineOpt.optimizedLine()
+					.end()
+					.getDistance(m_swerve.getFilteredPose().getTranslation());
+			return kLimitK0Pass + kLimitK1Pass * d * d / (1 + d * d);
 		}
 
 		return DriveConstants.kMaxSpeedMetersPerSecond;
@@ -706,7 +729,8 @@ public class Superstructure extends SubsystemBase {
 			if (m_latestParameters != null && m_latestParameters.isValid()) {
 				m_rollers.setRollerVelocity(m_latestParameters.rollerSpeedsRPM());
 				m_turret.setTurretAngle(m_latestParameters.turretAngleRobot().getDegrees());
-				m_hood.setHoodAngle(m_latestParameters.hoodAngleDegs() - kExitAngleOffset);
+				m_hood.setHoodAngle(kExitAngleOffset - m_latestParameters
+						.hoodAngleDegs() /* m_latestParameters.hoodAngleDegs() - kExitAngleOffset */);
 			}
 
 			// Feed only if the shot is possible
@@ -722,7 +746,8 @@ public class Superstructure extends SubsystemBase {
 
 				// Make sure to use current state values, and not the ideal values
 				var currState = m_shooterCalculator.computeCurrentExitParameters(m_latestParameters,
-						m_hood.getAngle() + kExitAngleOffset, m_turret.getAngle(), m_rollers.getVelocity(),
+						kExitAngleOffset - m_hood.getAngle()/* m_hood.getAngle() + kExitAngleOffset */,
+						m_turret.getAngle(), m_rollers.getVelocity(),
 						superstructureVisualizer.getRobotPoseWithHeight(
 								RobotContainer.getInstance().swerveSim.getSimulatedDriveTrainPose()),
 						RobotContainer.getInstance().swerveSim.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
@@ -791,7 +816,7 @@ public class Superstructure extends SubsystemBase {
 			if (m_latestParameters != null && m_latestParameters.isValid()) {
 				m_rollers.setRollerVelocity(m_latestParameters.rollerSpeedsRPM());
 				m_turret.setTurretAngle(m_latestParameters.turretAngleRobot().getDegrees());
-				m_hood.setHoodAngle(m_latestParameters.hoodAngleDegs() - kExitAngleOffset);
+				m_hood.setHoodAngle(kExitAngleOffset - m_latestParameters.hoodAngleDegs());
 			}
 
 			// Shoot if possible by enabling the feeder
@@ -832,7 +857,7 @@ public class Superstructure extends SubsystemBase {
 	/** Returns the most optimized point to pass the fuel towards. */
 	private Translation3d getBestAllianceFuelPassLocation() {
 		Tracer.start("OptimizePassTrajectory");
-		// TODO Maybe just shoot straight? (alliance-aware)
+
 		Line netLine = new Line(
 				AllianceUtil.flipWithAlliance(new Translation3d(FieldConstants.kBlueAllianceNetRightPoint))
 						.toTranslation2d(),
@@ -844,9 +869,16 @@ public class Superstructure extends SubsystemBase {
 				AllianceUtil.flipWithAlliance(new Translation3d(FieldConstants.kBlueAllianceZoneFuelPassLineLeftPoint))
 						.toTranslation2d());
 		// Performance should be fine? 0.1 - 1ms???
-		OptimizedLine opt = LineTrajectoryUtils.optimizeUntilNoIntersect(m_swerve.getFilteredPose().getTranslation(),
-				List.of(netLine), passLine, kPassTrajOptSteps, kPassFuelAcceptDistance);
+		OptimizedLine opt = LineTrajectoryUtils
+				.optimizeUntilNoIntersect(
+						m_swerve.getFilteredPose()
+								.transformBy(new Transform2d(kTurretPivotPointCenter.getTranslation().toTranslation2d(),
+										Rotation2d.kZero))
+								.getTranslation(),
+						List.of(netLine), passLine, kPassTrajOptSteps, kPassFuelAcceptDistance);
 		Tracer.finish("OptimizePassTrajectory");
+		m_latestPassLineOpt = opt;
+
 		return new Translation3d(opt.optimizedLine().end());
 	}
 

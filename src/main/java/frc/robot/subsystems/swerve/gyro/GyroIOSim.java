@@ -24,6 +24,7 @@ public class GyroIOSim implements GyroIO {
 
 	@Override
 	public void updateInputs(GyroIOInputsAutoLogged inputs) {
+		inputs.isConnected = true;
 		inputs.yawDegrees = getYawDegrees();
 		inputs.omegaDegreesPerSecond = getOmegaDegreesPerSecond();
 		inputs.pitchDegrees = 0.0;

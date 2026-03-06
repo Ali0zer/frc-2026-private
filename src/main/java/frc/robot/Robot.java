@@ -5,6 +5,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Amps;
+import static frc.robot.subsystems.shooter.hood.HoodConstants.kExitAngleOffset;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kMechanismMovementControllerRumbleStrength;
 
 import com.bobcats.lib.container.LoggedTunableNumber;
@@ -142,6 +143,10 @@ public class Robot extends LoggedRobot {
 		DriverStation.silenceJoystickConnectionWarning(true);
 		CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
 		m_scheduleLogger = Utils.registerLoopTimeLogger(this);
+
+		// Default overrides
+		SmartDashboard.putNumber("HoodOverrideAngle", 0);
+		SmartDashboard.putNumber("RollerOverrideRPM", 0);
 	}
 
 	@Override
@@ -238,12 +243,24 @@ public class Robot extends LoggedRobot {
 	public void testInit() {
 		// Cancel all commands at start of test mode
 		CommandScheduler.getInstance().cancelAll();
-		// Assign and schedule the test command
-		CommandScheduler.getInstance().schedule(m_testCommand = m_robotContainer.getTestCommand());
+
+		if (!m_robotContainer.superstructure.overrideHoodSetpointChooser.get()
+				&& !m_robotContainer.superstructure.overrideRollerSetpointChooser.get())
+			// Assign and schedule the test command
+			CommandScheduler.getInstance().schedule(m_testCommand = m_robotContainer.getTestCommand());
 	}
 
 	@Override
-	public void testPeriodic() {}
+	public void testPeriodic() {
+		// Calibration/override mode
+		if (m_robotContainer.superstructure.overrideHoodSetpointChooser.get())
+			m_robotContainer.hood.setHoodAngle(kExitAngleOffset - SmartDashboard.getNumber("HoodOverrideAngle", 0));
+		else m_robotContainer.hood.stop();
+
+		if (m_robotContainer.superstructure.overrideRollerSetpointChooser.get())
+			m_robotContainer.rollers.setRollerVelocity(SmartDashboard.getNumber("RollerOverrideRPM", 0));
+		else m_robotContainer.rollers.stop();
+	}
 
 	@Override
 	public void testExit() {
