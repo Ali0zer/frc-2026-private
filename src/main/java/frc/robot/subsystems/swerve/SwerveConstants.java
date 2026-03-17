@@ -165,21 +165,20 @@ public final class SwerveConstants {
 		public static final double kPathDriveP = 4;
 		public static final double kPathDriveD = 0;
 
-		public static final double kPathTurnP = 15;
-		public static final double kPathTurnD = 0.15;
+		public static final double kPathTurnP = 13;
+		public static final double kPathTurnD = 0;
 
 		public static final double kPathDrivePSim = 4;
 		public static final double kPathDriveDSim = 0;
 
-		// 2pi rad -> 4pi rad/s
-		public static final double kPathTurnPSim = 10;
-		public static final double kPathTurnDSim = 0;
+		public static final double kPathTurnPSim = 14;
+		public static final double kPathTurnDSim = 0.02;
 
-		public static final PathConstraints kPathConstraints = new PathConstraints(4.45, 5, Math.toRadians(540),
-				Math.toRadians(720));
+		public static final PathConstraints kPathConstraints = new PathConstraints(4.45, 5, Math.toRadians(720),
+				Math.toRadians(1400));
+		public static final PathConstraints kPathConstraintsScoring = new PathConstraints(1.5, 3,
+				Math.toRadians(9999999), Math.toRadians(9999999));
 
-		// TODO Change for AndyMark field (if using precise path following, change in PP
-		// instead)
 		// Autonomous manager data
 		public static final Map<String, Pose2d> kPathfindPoses = Map.of("Depot",
 				new Pose2d(0.572, 5.980, Rotation2d.kPi), "Outpost", new Pose2d(0.497, 0.628, Rotation2d.kZero),

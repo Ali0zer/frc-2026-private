@@ -16,13 +16,13 @@ import com.bobcats.lib.utils.Utils;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -50,6 +50,7 @@ import frc.robot.subsystems.swerve.SwerveConstants.DriveConstants;
 import frc.robot.subsystems.swerve.gyro.Gyro;
 import frc.robot.subsystems.swerve.module.SwerveModule;
 import frc.robot.subsystems.swerve.module.SwerveModuleIO;
+import frc.robot.util.CustomPPHolonomicDriveController;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -81,7 +82,7 @@ public class SwerveSubsystem extends SubsystemBase {
 	private final Field2d m_field = new Field2d();
 
 	public PIDController ArbitraryPIDx, ArbitraryPIDy;
-	public PIDController ArbitraryPIDAngular;
+	public ProfiledPIDController ArbitraryPIDAngular;
 
 	// Odometry thread
 	public static Lock odometryLock = new ReentrantLock();
@@ -156,7 +157,7 @@ public class SwerveSubsystem extends SubsystemBase {
 					// Set desired module states
 					setModuleStates(states);
 				},
-				new PPHolonomicDriveController(
+				new CustomPPHolonomicDriveController(
 						new PIDConstants(AutoConstants.kPathDriveP, 0.0, AutoConstants.kPathDriveD),
 						new PIDConstants(AutoConstants.kPathTurnP, 0.0, AutoConstants.kPathTurnD)),
 				config,

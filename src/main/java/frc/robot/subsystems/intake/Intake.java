@@ -157,6 +157,7 @@ public class Intake extends SubsystemBase {
 	 */
 	public void stopIntakeArm() {
 		m_io.stopArm();
+		m_latestSetpoint = getIntakeAngle();
 	}
 
 	/**

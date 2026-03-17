@@ -1,16 +1,45 @@
 package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.Meters;
-import static frc.robot.constants.FieldConstants.kFieldWith;
+import static frc.robot.commands.AutonomousBuilderConstants.k24ScoringTimer;
+import static frc.robot.commands.AutonomousBuilderConstants.k60ScoringTimer;
+import static frc.robot.commands.AutonomousBuilderConstants.k8ScoringTimer;
+import static frc.robot.commands.AutonomousBuilderConstants.kAdaptivePathStopPenalty;
+import static frc.robot.commands.AutonomousBuilderConstants.kAdaptivePathWaypointVelocity;
+import static frc.robot.commands.AutonomousBuilderConstants.kAutoBufferTime;
+import static frc.robot.commands.AutonomousBuilderConstants.kDepotIdleCooldown;
+import static frc.robot.commands.AutonomousBuilderConstants.kIntakeNeutralSpeedsFwdBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kIntakeNeutralSpeedsRevBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kLeaveSpeedsFwdBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kLeaveTimer;
+import static frc.robot.commands.AutonomousBuilderConstants.kNeutralIntakeTimer;
+import static frc.robot.commands.AutonomousBuilderConstants.kOutpostIdleCooldown;
+import static frc.robot.commands.AutonomousBuilderConstants.kPassBumpSpeedsFwdBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kPassBumpSpeedsRevBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kScoringPoseLeftBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kScoringPoseRightBlue;
+import static frc.robot.commands.AutonomousBuilderConstants.kScoringVelocityLimitDistanceThreshold;
+import static frc.robot.commands.AutonomousBuilderConstants.kSimPassBumpTimer;
 import static frc.robot.constants.FieldConstants.path;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
+import org.json.simple.parser.ParseException;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import com.bobcats.lib.auto.CustomRoutineBuilder;
 import com.bobcats.lib.utils.AllianceUtil;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
 import com.pathplanner.lib.util.FlippingUtil;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -29,16 +58,9 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.superstructure.SuperstructureConstants;
 import frc.robot.subsystems.swerve.SwerveConstants.AutoConstants;
 import frc.robot.subsystems.swerve.VisionConstants;
+import frc.robot.util.CustomPPHolonomicDriveController;
 import frc.robot.util.TrajectoryUtils2026;
 import frc.robot.util.TrajectoryUtils2026.GeneratorParams;
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-import org.json.simple.parser.ParseException;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
  * A class for building custom autonomous routines based on dashboard selections.
@@ -99,34 +121,6 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 			m_unableToObtainPath, m_objective2before1;
 
 	// TODO fallback scoring mode????
-
-	// Constants
-	private static final double kDepotIdleCooldown = 0.4;
-	private static final double kOutpostIdleCooldown = 2.5;
-
-	private static final double kNeutralIntakeTimer = 1.0;
-	private static final double kLeaveTimer = 0.5;
-
-	private static final double kAdaptivePathStopPenalty = 0.2;
-	private static final double kAdaptivePathWaypointVelocity = 1.3;
-
-	private static final double kAutoBufferTime = 0.12;
-
-	private static final ChassisSpeeds kLeaveSpeedsFwdBlue = new ChassisSpeeds(-1.5, 0, 0);
-
-	private static final ChassisSpeeds kIntakeNeutralSpeedsFwdBlue = new ChassisSpeeds(3.5, 0, 0);
-	private static final ChassisSpeeds kIntakeNeutralSpeedsRevBlue = new ChassisSpeeds(-3.5, 0, 0);
-
-	private static final double kSimPassBumpTimer = 1.0;
-	private static final double kPassBumpSpeedsFwdBlue = 1.5;
-	private static final double kPassBumpSpeedsRevBlue = -1.5;
-
-	private static final double k8ScoringTimer = 1.5;
-	private static final double k24ScoringTimer = 2.5;
-	private static final double k60ScoringTimer = 4.5;
-
-	private static final Pose2d kScoringPoseRightBlue = new Pose2d(2.5, 2.15, Rotation2d.fromDegrees(-136.7)),
-			kScoringPoseLeftBlue = new Pose2d(2.5, kFieldWith - 2.15, Rotation2d.fromDegrees(136.7));
 
 	// Pre-pathed trajectories
 	private PathPlannerPath m_rightLoopOver, m_leftLoopOver, m_rightSweepOver, m_leftSweepOver, m_towerLR, m_towerRL;
@@ -340,7 +334,7 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 			}
 
 			// Make sure to look in the opposite direction of travel to intake
-			PPHolonomicDriveController.overrideRotationFeedback(() -> {
+			CustomPPHolonomicDriveController.overrideRotationFeedback(() -> {
 				var speeds = swerve.getChassisSpeedsFieldRelative();
 				return swerve.ArbitraryPIDAngular.calculate(swerve.getRobotRotation().getRadians(),
 						Math.atan2(speeds.vyMetersPerSecond, speeds.vxMetersPerSecond) + Math.PI);
@@ -417,7 +411,7 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 					})))
 					.andThen(() -> swerve.stop())
 					.finallyDo((interrupt) -> {
-						// PPHolonomicDriveController.clearRotationFeedbackOverride();
+						// CustomPPHolonomicDriveController.clearRotationFeedbackOverride();
 						// Switch back to localization for teleop if interrupted
 						if (!interrupt) return;
 						robotContainer.objectDetectionCamRear.setEnabled(false);
@@ -455,9 +449,9 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 		return resetOdomCommand.andThen(Commands.waitSeconds(kAutoBufferTime))
 				.andThen(Commands.either(
 						parking.get()
-								.andThen(new DeferredCommand(() -> scoreFuel(99999, getPrescorePose()),
+								.andThen(new DeferredCommand(() -> scoreFuel(99999, getPrescorePose(), true),
 										Set.of(RobotContainer.getInstance().swerve)).onlyIf(m_scoreFirst8::get)),
-						new DeferredCommand(() -> scoreFuel(k8ScoringTimer, getPrescorePose()),
+						new DeferredCommand(() -> scoreFuel(k8ScoringTimer, getPrescorePose(), true),
 								Set.of(RobotContainer.getInstance().swerve)).onlyIf(m_scoreFirst8::get),
 						() -> m_objective1Chooser.get() == AutoObjective.kNone
 								&& m_objective2Chooser.get() == AutoObjective.kNone && m_parkChooser.get()))
@@ -580,7 +574,7 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 
 	/** Score after an objective has ended. */
 	private Command scoreAfterObjective(double scoreTime, boolean isObjective1) {
-		return new DeferredCommand(() -> scoreFuel(scoreTime, getOptimalScoringPose(isObjective1)), Set.of())
+		return new DeferredCommand(() -> scoreFuel(scoreTime, getOptimalScoringPose(isObjective1), false), Set.of())
 				.onlyIf(() -> m_scoringModeChooser.get() == ScoringMode.kObjective1And2
 						|| (isObjective1 && m_scoringModeChooser.get() == ScoringMode.kObjective1)
 						|| (!isObjective1 && m_scoringModeChooser.get() == ScoringMode.kObjective2));
@@ -606,14 +600,18 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 	}
 
 	/** Returns the command to start scoring. */
-	private Command scoreFuel(double scoreTime, Pose2d scoringPose) {
+	private Command scoreFuel(double scoreTime, Pose2d scoringPose, boolean isFirst8) {
 		return Commands.runOnce(RobotContainer.getInstance()::initAutonScoreFuelCommand)
 				// Align yaw during pathfind
-				.andThen(Commands.runOnce(() -> PPHolonomicDriveController
-						.overrideRotationFeedback(() -> DriveCommands.LatestShootingAngularVelocity)))
-				.andThen(new DeferredCommand(
-						() -> AutoBuilder.pathfindToPose(scoringPose, AutoConstants.kPathConstraints), Set.of())
-								.onlyIf(() -> scoringPose != null))
+				.andThen(Commands.runOnce(() -> {
+					CustomPPHolonomicDriveController
+							.overrideRotationFeedback(() -> DriveCommands.LatestShootingAngularVelocity);
+					CustomPPHolonomicDriveController.setCompleteOverrideRotationOutput(true);
+				}))
+				.andThen(new DeferredCommand(() -> AutoBuilder.pathfindToPose(scoringPose,
+						getScoringConstraints(RobotContainer.getInstance().swerve.getFilteredPose(), scoringPose,
+								isFirst8)),
+						Set.of()).onlyIf(() -> scoringPose != null))
 				// Rotate to setpoint
 				.andThen(Commands
 						.run(() -> RobotContainer.getInstance().swerve.runSpeeds(0, 0,
@@ -629,11 +627,21 @@ public class AutonomousBuilder implements CustomRoutineBuilder {
 				.andThen(Commands.print("Seconds waited: " + scoreTime))
 				.finallyDo(() -> {
 					DriveCommands.LatestShootingAngularVelocity = 0;
-					RobotContainer.getInstance().swerve.ArbitraryPIDAngular.reset();
-					PPHolonomicDriveController.clearRotationFeedbackOverride();
+					RobotContainer.getInstance().swerve.ArbitraryPIDAngular
+							.reset(RobotContainer.getInstance().swerve.getRobotRotation().getRadians());
+					CustomPPHolonomicDriveController.clearRotationFeedbackOverride();
 					RobotContainer.getInstance().cancelAutonScoreFuelCommand();
 					RobotContainer.getInstance().superstructure.setObjectiveOriented(true);
 				});
+	}
+
+	/** Returns the appropriate scoring path constraints. */
+	private PathConstraints getScoringConstraints(Pose2d robot, Pose2d scoringPose, boolean isFirst8) {
+		if (isFirst8) return AutoConstants.kPathConstraints;
+
+		if (robot.getTranslation().getDistance(scoringPose.getTranslation()) < kScoringVelocityLimitDistanceThreshold)
+			return AutoConstants.kPathConstraintsScoring;
+		else return AutoConstants.kPathConstraints;
 	}
 
 	/** Returns the closest scoring pose for the hub. */

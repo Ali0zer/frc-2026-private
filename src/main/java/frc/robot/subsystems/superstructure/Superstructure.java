@@ -2,7 +2,6 @@ package frc.robot.subsystems.superstructure;
 
 import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.constants.FieldConstants.path;
-import static frc.robot.subsystems.intake.IntakeConstants.kArmClosedAngle;
 import static frc.robot.subsystems.intake.IntakeConstants.kArmOpenedAngle;
 import static frc.robot.subsystems.intake.IntakeConstants.kArmPushFuelAngle;
 import static frc.robot.subsystems.shooter.hood.HoodConstants.kExitAngleOffset;
@@ -339,6 +338,7 @@ public class Superstructure extends SubsystemBase {
 		Logger.recordOutput("Superstructure/PrefireColor", prefireFlashColor);
 		Logger.recordOutput("CShooterControl/LatestShootingAngVel", DriveCommands.LatestShootingAngularVelocity);
 		Logger.recordOutput("CShooterControl/NearSetpoint", m_swerve.ArbitraryPIDAngular.atSetpoint());
+		Logger.recordOutput("CShooterControl/Setpoint", m_swerve.ArbitraryPIDAngular.getSetpoint());
 
 		Tracer.finish("SuperstructurePeriodic");
 	}
@@ -604,13 +604,10 @@ public class Superstructure extends SubsystemBase {
 					getLatestShooterParameters().turretAngleField().getRadians() - Math.toRadians(kHoodCalibrationYaw));
 
 			// Feed only if the shot is possible
-			if (canFire.getAsBoolean() && Timer.getFPGATimestamp() - m_lastFuelShotSim >= kAverageShotTime
-					&& m_latestParameters != null && m_latestParameters.isValid())
-				startFeeding();
+			if (canFire.getAsBoolean()) startFeeding();
 
 			// Spawn projectile if there are game pieces in the hopper
 			if (canFire.getAsBoolean() && Timer.getFPGATimestamp() - m_lastFuelShotSim >= kAverageShotTime
-					&& m_latestParameters != null && m_latestParameters.isValid()
 					&& m_intakeSim.getGamePiecesAmount() > 0) {
 				// startFeeding();
 
@@ -627,34 +624,32 @@ public class Superstructure extends SubsystemBase {
 			}
 		})
 				// Stop feeder when unable to fire
-				.alongWith(Commands.run(() -> {
-					if (!canFire.getAsBoolean() || m_latestParameters == null || !m_latestParameters.isValid())
-						stopFeeding();
-				}))
+				.alongWith(Commands.run(() -> { if (!canFire.getAsBoolean()) stopFeeding(); }))
 				.alongWith(Commands.run(() -> {
 					// TODO Needs testing
 					// Oscillate intake
 					if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
-							&& m_latestParameters != null && isLatestShooterParamsRecent()
-							&& m_latestParameters.isValid()) {
-						if (m_intake.getLatestArmSetpoint() == kArmClosedAngle && m_intake.isArmNearSetpoint()) {
-							m_intake.openIntake();
-							return;
-						}
-
+							&& canFire.getAsBoolean()) {
 						if (m_intake.getLatestArmSetpoint() == kArmPushFuelAngle && (m_intake.isArmNearSetpoint()
 								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
 							m_intake.openIntake();
 							m_intakeOscillationTimer.restart();
-						} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle && m_intake.isArmNearSetpoint()) {
-							m_intake.intakePushAngle();
-							m_intakeOscillationTimer.restart();
-						}
+						} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle && (m_intake.isArmNearSetpoint()
+								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
+									m_intake.intakePushAngle();
+									m_intakeOscillationTimer.restart();
+								} else
+							if (m_intake.getLatestArmSetpoint() != kArmOpenedAngle
+									&& m_intake.getLatestArmSetpoint() != kArmPushFuelAngle) {
+										m_intake.openIntake();
+									} else
+								if (!m_intakeOscillationTimer.isRunning()) { m_intakeOscillationTimer.start(); }
 					} else if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
-							&& (m_latestParameters == null || !isLatestShooterParamsRecent()
-									|| !m_latestParameters.isValid())) {
-										m_intake.stopIntakeArm();
-									}
+							&& !canFire.getAsBoolean()) {
+								m_intake.stopIntakeArm();
+								m_intakeOscillationTimer.stop();
+								m_intakeOscillationTimer.reset();
+							}
 				}))
 				// .alongWith(Commands.run(() -> { if (!canFire.getAsBoolean()) stopFeeding(); }))
 				.onlyWhile(() -> m_isObjectiveOriented)
@@ -726,30 +721,35 @@ public class Superstructure extends SubsystemBase {
 					getLatestShooterParameters().turretAngleField().getRadians() - Math.toRadians(kHoodCalibrationYaw));
 
 			// Shoot if possible by enabling the feeder
-			if (canFire.getAsBoolean() && m_latestParameters != null && m_latestParameters.isValid()) startFeeding();
+			if (canFire.getAsBoolean()) startFeeding();
 		})
 				// Stop feeder when unable to fire
-				.alongWith(Commands.run(() -> {
-					if (!canFire.getAsBoolean() || m_latestParameters == null || !m_latestParameters.isValid())
-						stopFeeding();
-				}))
+				.alongWith(Commands.run(() -> { if (!canFire.getAsBoolean()) stopFeeding(); }))
 				.alongWith(Commands.run(() -> {
 					// TODO Needs testing
 					// Oscillate intake
-					System.out.println(isLatestShooterParamsRecent());
 					if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
-							&& m_latestParameters != null && isLatestShooterParamsRecent()
-							&& m_latestParameters.isValid()) {
-						if (m_intake.getLatestArmSetpoint() == kArmPushFuelAngle && m_intake.isArmNearSetpoint()) {
+							&& canFire.getAsBoolean()) {
+						if (m_intake.getLatestArmSetpoint() == kArmPushFuelAngle && (m_intake.isArmNearSetpoint()
+								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
 							m_intake.openIntake();
-						} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle && m_intake.isArmNearSetpoint()) {
-							m_intake.intakePushAngle();
-						}
+							m_intakeOscillationTimer.restart();
+						} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle && (m_intake.isArmNearSetpoint()
+								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
+									m_intake.intakePushAngle();
+									m_intakeOscillationTimer.restart();
+								} else
+							if (m_intake.getLatestArmSetpoint() != kArmOpenedAngle
+									&& m_intake.getLatestArmSetpoint() != kArmPushFuelAngle) {
+										m_intake.openIntake();
+									} else
+								if (!m_intakeOscillationTimer.isRunning()) { m_intakeOscillationTimer.start(); }
 					} else if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
-							&& (m_latestParameters == null || !isLatestShooterParamsRecent()
-									|| !m_latestParameters.isValid())) {
-										m_intake.stopIntakeArm();
-									}
+							&& !canFire.getAsBoolean()) {
+								m_intake.stopIntakeArm();
+								m_intakeOscillationTimer.stop();
+								m_intakeOscillationTimer.reset();
+							}
 				}))
 				.onlyWhile(() -> m_isObjectiveOriented)
 				.finallyDo(() -> {
@@ -757,6 +757,8 @@ public class Superstructure extends SubsystemBase {
 					m_rollers.stop();
 					m_hood.stop();
 					stopFeeding();
+					m_intakeOscillationTimer.stop();
+					m_intakeOscillationTimer.reset();
 					m_actionState = ActionState.kActionIdle;
 				});
 	}

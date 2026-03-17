@@ -2,13 +2,13 @@ package frc.robot;
 
 import static frc.robot.constants.FieldConstants.path;
 import static frc.robot.constants.OIConstants.kDriverController;
+import static frc.robot.constants.OIConstants.kDriverIntakeKeybind;
+import static frc.robot.constants.OIConstants.kDriverOuttakeKeybind;
 import static frc.robot.constants.OIConstants.kDriverSlowModeKeybind;
 import static frc.robot.constants.OIConstants.kDriverXBrakeKeybind;
 import static frc.robot.constants.OIConstants.kDriverZeroHeadingKeybind;
 import static frc.robot.constants.OIConstants.kOperatorController;
 import static frc.robot.constants.OIConstants.kOperatorCorralKeybind;
-import static frc.robot.constants.OIConstants.kDriverIntakeKeybind;
-import static frc.robot.constants.OIConstants.kDriverOuttakeKeybind;
 import static frc.robot.constants.OIConstants.kOperatorPassFuelKeybind;
 import static frc.robot.constants.OIConstants.kOperatorScoreHubKeybind;
 import static frc.robot.constants.OIConstants.kOperatorToggleObjectiveKeybind;
@@ -29,8 +29,10 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -297,7 +299,10 @@ public class RobotContainer {
 				// Arbitrary PIDs
 				swerve.ArbitraryPIDx = new PIDController(AutoConstants.kPathDriveP, 0, AutoConstants.kPathDriveD);
 				swerve.ArbitraryPIDy = new PIDController(AutoConstants.kPathDriveP, 0, AutoConstants.kPathDriveD);
-				swerve.ArbitraryPIDAngular = new PIDController(AutoConstants.kPathTurnP, 0, AutoConstants.kPathTurnD);
+				swerve.ArbitraryPIDAngular = new ProfiledPIDController(AutoConstants.kPathTurnP, 0,
+						AutoConstants.kPathTurnD,
+						new TrapezoidProfile.Constraints(AutoConstants.kPathConstraints.maxAngularVelocityRadPerSec(),
+								AutoConstants.kPathConstraints.maxAngularAccelerationRadPerSecSq()));
 				swerve.ArbitraryPIDAngular.enableContinuousInput(-Math.PI, Math.PI);
 				swerve.ArbitraryPIDAngular.setTolerance(kShotYawMaxError);
 
@@ -336,8 +341,10 @@ public class RobotContainer {
 				// Arbitrary PIDs
 				swerve.ArbitraryPIDx = new PIDController(AutoConstants.kPathDrivePSim, 0, AutoConstants.kPathDriveDSim);
 				swerve.ArbitraryPIDy = new PIDController(AutoConstants.kPathDrivePSim, 0, AutoConstants.kPathDriveDSim);
-				swerve.ArbitraryPIDAngular = new PIDController(AutoConstants.kPathTurnPSim, 0,
-						AutoConstants.kPathTurnDSim);
+				swerve.ArbitraryPIDAngular = new ProfiledPIDController(AutoConstants.kPathTurnPSim, 0,
+						AutoConstants.kPathTurnDSim,
+						new TrapezoidProfile.Constraints(AutoConstants.kPathConstraints.maxAngularVelocityRadPerSec(),
+								AutoConstants.kPathConstraints.maxAngularAccelerationRadPerSecSq()));
 				swerve.ArbitraryPIDAngular.enableContinuousInput(-Math.PI, Math.PI);
 				swerve.ArbitraryPIDAngular.setTolerance(kShotYawMaxError);
 

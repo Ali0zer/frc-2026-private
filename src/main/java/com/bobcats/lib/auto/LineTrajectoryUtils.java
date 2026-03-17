@@ -4,7 +4,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import com.bobcats.lib.utils.AllianceUtil;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -14,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.DeferredCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.util.CustomPPHolonomicDriveController;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -358,7 +358,7 @@ public class LineTrajectoryUtils {
 				Set.of())
 						// Apply rotational override to the pathplanner path
 						.alongWith(Commands.runOnce(() -> {
-							PPHolonomicDriveController.overrideRotationFeedback(
+							CustomPPHolonomicDriveController.overrideRotationFeedback(
 									() -> rotateFunc.apply(lookAt.get(), poseSupplier.get()).in(RadiansPerSecond));
 						}))
 						.andThen(Commands.parallel(new DeferredCommand(() -> AutoBuilder
@@ -392,7 +392,7 @@ public class LineTrajectoryUtils {
 										Set.of())))
 						.finallyDo(() -> {
 							stopRotation.run();
-							PPHolonomicDriveController.clearRotationFeedbackOverride();
+							CustomPPHolonomicDriveController.clearRotationFeedbackOverride();
 						})
 						.onlyIf(() -> optLine.get() != null && optLine.get().success())
 						.withTimeout(maxTime.doubleValue());
@@ -414,7 +414,7 @@ public class LineTrajectoryUtils {
 				Set.of())
 						// Apply rotational override to the pathplanner path
 						.alongWith(Commands.runOnce(() -> {
-							PPHolonomicDriveController.overrideRotationFeedback(
+							CustomPPHolonomicDriveController.overrideRotationFeedback(
 									() -> rotateFunc.apply(lookAt.get(), poseSupplier.get()).in(RadiansPerSecond));
 						}))
 						.andThen(Commands.parallel(new DeferredCommand(() -> AutoBuilder
@@ -448,7 +448,7 @@ public class LineTrajectoryUtils {
 										Set.of())))
 						.finallyDo(() -> {
 							stopRotation.run();
-							PPHolonomicDriveController.clearRotationFeedbackOverride();
+							CustomPPHolonomicDriveController.clearRotationFeedbackOverride();
 						})
 						.onlyIf(() -> optLine.get() != null && optLine.get().success());
 	}
@@ -556,7 +556,7 @@ public class LineTrajectoryUtils {
 						.contains(new Vector2(poseSupplier.get().getX(), poseSupplier.get().getY()))))
 				// Apply rotational override to the pathplanner path
 				.alongWith(Commands.runOnce(() -> {
-					PPHolonomicDriveController.overrideRotationFeedback(
+					CustomPPHolonomicDriveController.overrideRotationFeedback(
 							() -> rotateFunc.apply(lookAt, poseSupplier.get()).in(RadiansPerSecond));
 				}))
 				// Run the rotation command to look at the target, rotate until within tolerance
@@ -565,7 +565,7 @@ public class LineTrajectoryUtils {
 								() -> Commands.run(() -> rotateFunc.apply(lookAt, poseSupplier.get()))
 										.until(() -> endAfterRotating && angleWithinTolerance(lookAt,
 												poseSupplier.get().getRotation(), angleToleranceDegs))
-										.finallyDo(PPHolonomicDriveController::clearRotationFeedbackOverride),
+										.finallyDo(CustomPPHolonomicDriveController::clearRotationFeedbackOverride),
 								Set.of()))
 				// Apply a timeout to the whole command
 				.withTimeout(maxTime.doubleValue())
@@ -589,7 +589,7 @@ public class LineTrajectoryUtils {
 						.contains(new Vector2(poseSupplier.get().getX(), poseSupplier.get().getY()))))
 				// Apply rotational override to the pathplanner path
 				.alongWith(Commands.runOnce(() -> {
-					PPHolonomicDriveController.overrideRotationFeedback(
+					CustomPPHolonomicDriveController.overrideRotationFeedback(
 							() -> rotateFunc.apply(lookAt, poseSupplier.get()).in(RadiansPerSecond));
 				}))
 				// Run the rotation command to look at the target, rotate until within tolerance
@@ -598,7 +598,7 @@ public class LineTrajectoryUtils {
 								() -> Commands.run(() -> rotateFunc.apply(lookAt, poseSupplier.get()))
 										.until(() -> endAfterRotating && angleWithinTolerance(lookAt,
 												poseSupplier.get().getRotation(), angleToleranceDegs))
-										.finallyDo(PPHolonomicDriveController::clearRotationFeedbackOverride),
+										.finallyDo(CustomPPHolonomicDriveController::clearRotationFeedbackOverride),
 								Set.of()))
 				.finallyDo(stopRotation)
 				.onlyIf(() -> optLine != null && optLine.success());
