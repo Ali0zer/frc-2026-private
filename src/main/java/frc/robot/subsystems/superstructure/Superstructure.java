@@ -94,6 +94,7 @@ import frc.robot.commands.drive.DriveCommands;
 import frc.robot.constants.Constants.PhysicalParameters;
 import frc.robot.constants.Constants.RobotMode;
 import frc.robot.constants.FieldConstants;
+import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.shooter.feeder.Feeder;
 import frc.robot.subsystems.shooter.hood.Hood;
@@ -185,6 +186,7 @@ public class Superstructure extends SubsystemBase {
 
 	// Subsystems
 	private final Feeder m_feeder;
+	private final Indexer m_indexer;
 	private final Hood m_hood;
 	private final Rollers m_rollers;
 	private final Intake m_intake;
@@ -194,14 +196,16 @@ public class Superstructure extends SubsystemBase {
 	 * Constructs a new Superstructure.
 	 *
 	 * @param feeder  The feeder subsystem.
+	 * @param indexer  The indexer subsystem.
 	 * @param hood    The hood subsytem.
 	 * @param rollers The roller subsytem.
 	 * @param intake  The intake subsystem.
 	 * @param swerve  The swerve subsystem.
 	 */
 	@SuppressWarnings("resource")
-	public Superstructure(Feeder feeder, Hood hood, Rollers rollers, Intake intake, SwerveSubsystem swerve) {
+	public Superstructure(Feeder feeder, Indexer indexer, Hood hood, Rollers rollers, Intake intake, SwerveSubsystem swerve) {
 		m_feeder = feeder;
+		m_indexer = indexer;
 		m_hood = hood;
 		m_rollers = rollers;
 		m_intake = intake;
@@ -572,7 +576,9 @@ public class Superstructure extends SubsystemBase {
 		if (m_isFeeding)
 			return;
 		m_feeder.feed();
+		
 		m_intake.runIntakeRollers();
+		m_indexer.runForward();
 		m_isFeeding = true;
 	}
 
@@ -581,8 +587,11 @@ public class Superstructure extends SubsystemBase {
 		if (!m_isFeeding)
 			return;
 		m_feeder.stop();
+
 		if (m_primaryState != PrimaryState.kIntaking)
-			m_intake.stopRollers();
+		 	m_intake.stopRollers();
+		m_indexer.stop();
+
 		m_isFeeding = false;
 	}
 

@@ -32,7 +32,7 @@ import org.ironmaple.simulation.drivesims.COTS;
 import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
 import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 
-// TODO Needs checking
+// TODO Verify all CAN IDs
 
 /**
  * The constants required for the holonomic drive chassis.
@@ -104,7 +104,7 @@ public final class SwerveConstants {
 		public static final int kFrontLeftCANCoderId = 13;
 		public static final int kRearLeftCANCoderId = 33;
 		public static final int kFrontRightCANCoderId = 23;
-		public static final int kRearRightCANCoderId = 42;
+		public static final int kRearRightCANCoderId = 43;
 
 		public static final int kPigeon2CanId = 1;
 

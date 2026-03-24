@@ -46,6 +46,10 @@ import frc.robot.commands.drive.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.OIConstants;
+import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.indexer.io.IndexerIO;
+import frc.robot.subsystems.indexer.io.IndexerIOKraken;
+import frc.robot.subsystems.indexer.io.IndexerIOSim;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.io.IntakeIO;
 import frc.robot.subsystems.intake.io.IntakeIOKraken;
@@ -100,7 +104,7 @@ public class RobotContainer {
 	public SwerveDriveSimulation swerveSim;
 
 	// Hopper systems
-	// public Backpack backpack;
+	public Indexer indexer;
 	public Intake intake;
 
 	// Shooter systems
@@ -425,17 +429,17 @@ public class RobotContainer {
 		switch (Robot.kRobotMode) {
 			case kReal:
 				intake = new Intake(new IntakeIOKraken());
-				// backpack = new Backpack(new BackpackIOKraken());
+				indexer = new Indexer(new IndexerIOKraken());
 				break;
 
 			case kSim:
 				intake = new Intake(new IntakeIOSim());
-				// backpack = new Backpack(new BackpackIOSim());
+				indexer = new Indexer(new IndexerIOSim());
 				break;
 
 			case kReplay:
 				intake = new Intake(new IntakeIO() {});
-				// backpack = new Backpack(new BackpackIO() {});
+				indexer = new Indexer(new IndexerIO() {});
 				break;
 
 			default:
@@ -445,7 +449,7 @@ public class RobotContainer {
 
 	/** Initializes the the superstructure. */
 	private void initSuperstructure() {
-		superstructure = new Superstructure(feeder, hood, rollers, intake, swerve);
+		superstructure = new Superstructure(feeder, indexer, hood, rollers, intake, swerve);
 	}
 
 	/**
