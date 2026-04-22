@@ -28,12 +28,18 @@ public class AutonomousBuilderConstants {
 	public static final double kPassBumpSpeedsFwdBlue = 1.5;
 	public static final double kPassBumpSpeedsRevBlue = -1.5;
 
+	public static final double kPassTrenchTimer = 0.5;
+	public static final double kPassTrenchSpeedsFwdBlue = 2.5;
+	public static final double kPassTrenchSpeedsRevBlue = -2.5;
+
 	public static final double k8ScoringTimer = 1.5;
 	public static final double k24ScoringTimer = 2.5;
 	public static final double k60ScoringTimer = 4.5;
 
 	public static final double kScoringVelocityLimitDistanceThreshold = 3.7;
 
-	public static final Pose2d kScoringPoseRightBlue = new Pose2d(2.5, 2.15, Rotation2d.fromDegrees(-136.7)),
-			kScoringPoseLeftBlue = new Pose2d(2.5, kFieldWith - 2.15, Rotation2d.fromDegrees(136.7));
+	public static final Pose2d kScoringPoseRightBumpBlue = new Pose2d(2.5, 2.15, Rotation2d.fromDegrees(-136.7)),
+			kScoringPoseLeftBumpBlue = new Pose2d(2.5, kFieldWith - 2.15, Rotation2d.fromDegrees(136.7));
+	public static final Pose2d kScoringPoseRightTrenchBlue = new Pose2d(3.343, 0.736, Rotation2d.fromDegrees(112.8)),
+			kScoringPoseLeftTrenchBlue = new Pose2d(3.343, kFieldWith - 0.736, Rotation2d.fromDegrees(-112.8));
 }

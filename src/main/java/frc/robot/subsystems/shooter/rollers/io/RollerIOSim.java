@@ -33,7 +33,7 @@ public class RollerIOSim implements RollerIO {
 	public RollerIOSim() {
 		// Create sim
 		m_sim = new CustomDCMotorSim(LinearSystemId.createDCMotorSystem(kGearbox, kMomentOfInertia, kGearboxReduction),
-				kGearbox, 2);
+				kGearbox, 4);
 		m_sim.setSupplyCurrentLimitAmps(kMotorSupplyLimitAmps);
 		m_sim.setStatorCurrentLimitAmps(kMotorStatorLimitAmps);
 
@@ -59,17 +59,18 @@ public class RollerIOSim implements RollerIO {
 		inputs.appliedVoltageMain = m_sim.getAppliedInputVoltage();
 		inputs.rpmMain = m_sim.getOutputAngularVelocityRPM();
 		inputs.positionRevsMain = m_sim.getOutputAngularPositionRotations();
-		inputs.supplyCurrentAmpsMain = Math.abs(m_sim.getSupplyCurrentDrawAmps());
-		inputs.statorCurrentAmpsMain = Math.abs(m_sim.getStatorCurrentDrawAmps());
+		inputs.supplyCurrentAmpsMain = Math.abs(m_sim.getSupplyCurrentDrawAmps() / 4.0);
+		inputs.statorCurrentAmpsMain = Math.abs(m_sim.getStatorCurrentDrawAmps() / 4.0);
 		inputs.temperatureCelsiusMain = 20;
 
-		inputs.followerMotorConnected = true;
-		inputs.appliedVoltageFollower = m_sim.getAppliedInputVoltage();
-		inputs.rpmFollower = m_sim.getOutputAngularVelocityRPM();
-		inputs.positionRevsFollower = m_sim.getOutputAngularPositionRotations();
-		inputs.supplyCurrentAmpsFollower = Math.abs(m_sim.getSupplyCurrentDrawAmps());
-		inputs.statorCurrentAmpsFollower = Math.abs(m_sim.getStatorCurrentDrawAmps());
-		inputs.temperatureCelsiusFollower = 20;
+		inputs.follower1MotorConnected = true;
+		inputs.temperatureCelsiusFollower1 = 20;
+
+		inputs.follower2MotorConnected = true;
+		inputs.temperatureCelsiusFollower2 = 20;
+
+		inputs.follower3MotorConnected = true;
+		inputs.temperatureCelsiusFollower3 = 20;
 	}
 
 	@Override

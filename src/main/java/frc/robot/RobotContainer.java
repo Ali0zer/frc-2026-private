@@ -12,15 +12,10 @@ import static frc.robot.constants.OIConstants.kOperatorCorralKeybind;
 import static frc.robot.constants.OIConstants.kOperatorPassFuelKeybind;
 import static frc.robot.constants.OIConstants.kOperatorScoreHubKeybind;
 import static frc.robot.constants.OIConstants.kOperatorToggleObjectiveKeybind;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationAngle;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kShotYawMaxError;
 
 import com.bobcats.lib.auto.AutonomousManager;
 import com.bobcats.lib.auto.AutonomousManager.PathfindStrategy;
-import com.bobcats.lib.subsystem.objectDetection.ObjectDetectionIO;
-import com.bobcats.lib.subsystem.objectDetection.ObjectDetectionSubsystem;
-import com.bobcats.lib.subsystem.objectDetection.io.ObjectDetectionIOLimelight;
-import com.bobcats.lib.subsystem.objectDetection.io.ObjectDetectionIOPhotonVisionSim;
 import com.bobcats.lib.subsystem.vision.LibVisionIO;
 import com.bobcats.lib.subsystem.vision.io.LibVisionIOLimelight;
 import com.bobcats.lib.subsystem.vision.io.LibVisionIOPhotonVisionSim;
@@ -44,7 +39,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.AutonomousBuilder;
 import frc.robot.commands.drive.DriveCommands;
 import frc.robot.constants.Constants;
-import frc.robot.constants.FieldConstants;
 import frc.robot.constants.OIConstants;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.io.IndexerIO;
@@ -58,10 +52,6 @@ import frc.robot.subsystems.shooter.feeder.Feeder;
 import frc.robot.subsystems.shooter.feeder.io.FeederIO;
 import frc.robot.subsystems.shooter.feeder.io.FeederIOKraken;
 import frc.robot.subsystems.shooter.feeder.io.FeederIOSim;
-import frc.robot.subsystems.shooter.hood.Hood;
-import frc.robot.subsystems.shooter.hood.io.HoodIO;
-import frc.robot.subsystems.shooter.hood.io.HoodIOKraken;
-import frc.robot.subsystems.shooter.hood.io.HoodIOSim;
 import frc.robot.subsystems.shooter.rollers.Rollers;
 import frc.robot.subsystems.shooter.rollers.io.RollerIO;
 import frc.robot.subsystems.shooter.rollers.io.RollerIOKraken;
@@ -82,13 +72,10 @@ import frc.robot.subsystems.swerve.gyro.GyroIOSim;
 import frc.robot.subsystems.swerve.module.SwerveModuleIO;
 import frc.robot.subsystems.swerve.module.SwerveModuleIOKraken;
 import frc.robot.subsystems.swerve.module.SwerveModuleIOSim;
-import java.util.Comparator;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import org.photonvision.estimation.TargetModel;
-import org.photonvision.simulation.VisionTargetSim;
 
 /**
  * The main robot container instance.
@@ -109,13 +96,10 @@ public class RobotContainer {
 
 	// Shooter systems
 	public Feeder feeder;
-	public Hood hood;
 	public Rollers rollers;
 
 	// Generic systems
 	public Superstructure superstructure;
-	public ObjectDetectionIO objectDetectionCamRear;
-	public ObjectDetectionSubsystem objectDetection;
 
 	private AutonomousManager m_autoManager;
 	private AutonomousBuilder m_autoSequenceBuilder;
@@ -194,8 +178,7 @@ public class RobotContainer {
 		// Objective buttons
 		kOperatorToggleObjectiveKeybind.onTrue(Commands.parallel(
 				Commands.runOnce(() -> superstructure.setObjectiveOriented(!superstructure.isObjectiveOriented())),
-				superstructure.stopShooter()
-						.andThen(Commands.runOnce(() -> hood.setHoodAngle(kHoodCalibrationAngle)))));
+				superstructure.stopShooter()));
 		kOperatorScoreHubKeybind.onTrue(superstructure.objectiveScoreHub());
 		kOperatorPassFuelKeybind.onTrue(superstructure.objectivePassFuelAlliance());
 		// Intake bindings
@@ -221,8 +204,7 @@ public class RobotContainer {
 		NamedCommands.registerCommand("StopScoringFuel",
 				Commands.runOnce(this::cancelAutonScoreFuelCommand)
 						.andThen(Commands.runOnce(() -> superstructure.setObjectiveOriented(false)))
-						.andThen(superstructure.stopShooter())
-						.andThen(Commands.runOnce(() -> hood.setHoodAngle(kHoodCalibrationAngle))));
+						.andThen(superstructure.stopShooter()));
 
 		NamedCommands.registerCommand("PathfindDepot",
 				m_autoManager.getPathfindCommand(path("Depot"), AutoConstants.kPathfindSkipTolerance));
@@ -265,10 +247,6 @@ public class RobotContainer {
 						.andThen(rollers.sysIdQuasistatic(Direction.kReverse))
 						.andThen(rollers.sysIdDynamic(Direction.kForward))
 						.andThen(rollers.sysIdDynamic(Direction.kReverse)));
-		m_testChooser.addOption("SysId Hood (Q-F)", () -> hood.sysIdQuasistatic(Direction.kForward));
-		m_testChooser.addOption("SysId Hood (Q-R)", () -> hood.sysIdQuasistatic(Direction.kReverse));
-		m_testChooser.addOption("SysId Hood (D-F)", () -> hood.sysIdDynamic(Direction.kForward));
-		m_testChooser.addOption("SysId Hood (D-R)", () -> hood.sysIdDynamic(Direction.kReverse));
 
 	}
 
@@ -294,12 +272,10 @@ public class RobotContainer {
 						VisionConstants.kOdometryStdDevs,
 						new LibVisionIOLimelight(VisionConstants.kLLName_Left,
 								() -> Rotation2d.fromDegrees(gyro.getInputs().yawDegrees),
-								VisionConstants.kRobotToCamera_Left));
-				// spotless:off
-						// new LibVisionIOLimelight(VisionConstants.kLLName_Right,
-						//		() -> Rotation2d.fromDegrees(gyro.getInputs().yawDegrees),
-						//		VisionConstants.kRobotToCamera_Right)
-						// spotless:on
+								VisionConstants.kRobotToCamera_Left),
+						new LibVisionIOLimelight(VisionConstants.kLLName_Right,
+								() -> Rotation2d.fromDegrees(gyro.getInputs().yawDegrees),
+								VisionConstants.kRobotToCamera_Right));
 				// Arbitrary PIDs
 				swerve.ArbitraryPIDx = new PIDController(AutoConstants.kPathDriveP, 0, AutoConstants.kPathDriveD);
 				swerve.ArbitraryPIDy = new PIDController(AutoConstants.kPathDriveP, 0, AutoConstants.kPathDriveD);
@@ -309,16 +285,6 @@ public class RobotContainer {
 								AutoConstants.kPathConstraints.maxAngularAccelerationRadPerSecSq()));
 				swerve.ArbitraryPIDAngular.enableContinuousInput(-Math.PI, Math.PI);
 				swerve.ArbitraryPIDAngular.setTolerance(kShotYawMaxError);
-
-				// Initialize the object detection
-				objectDetectionCamRear = new ObjectDetectionIOLimelight(VisionConstants.kLLName_Left,
-						VisionConstants.kRobotToCamera_Left.getTranslation().toTranslation2d(), swerve::getFilteredPose,
-						VisionConstants.kRobotToCamera_Left.getZ(),
-						Math.toDegrees(VisionConstants.kRobotToCamera_Left.getRotation().getZ()),
-						Math.toDegrees(VisionConstants.kRobotToCamera_Left.getRotation().getY()),
-						FieldConstants.kFuelDiameterNominal / 2.0, FieldConstants.kFuelDiameterNominal / 2.0,
-						Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, VisionConstants.kObjectDetectionMaxYaw);
-				objectDetection = new ObjectDetectionSubsystem("Fuel", objectDetectionCamRear);
 				break;
 
 			case kSim:
@@ -335,13 +301,11 @@ public class RobotContainer {
 						new LibVisionIOPhotonVisionSim(VisionConstants.kLLName_Left,
 								VisionConstants.kRobotToCamera_Left, null,
 								() -> new Pose3d(swerveSim.getSimulatedDriveTrainPose()),
+								VisionConstants.kSimCameraProperties),
+						new LibVisionIOPhotonVisionSim(VisionConstants.kLLName_Right,
+								VisionConstants.kRobotToCamera_Right, null,
+								() -> new Pose3d(swerveSim.getSimulatedDriveTrainPose()),
 								VisionConstants.kSimCameraProperties));
-				// spotless:off
-						// new LibVisionIOPhotonVisionSim(VisionConstants.kLLName_Right,
-						//		VisionConstants.kRobotToCamera_Right, null,
-						//		() -> new Pose3d(swerveSim.getSimulatedDriveTrainPose()),
-						//		VisionConstants.kSimCameraProperties));
-						// spotless:on
 				// Arbitrary PIDs
 				swerve.ArbitraryPIDx = new PIDController(AutoConstants.kPathDrivePSim, 0, AutoConstants.kPathDriveDSim);
 				swerve.ArbitraryPIDy = new PIDController(AutoConstants.kPathDrivePSim, 0, AutoConstants.kPathDriveDSim);
@@ -352,28 +316,6 @@ public class RobotContainer {
 				swerve.ArbitraryPIDAngular.enableContinuousInput(-Math.PI, Math.PI);
 				swerve.ArbitraryPIDAngular.setTolerance(kShotYawMaxError);
 
-				// Initialize the object detection
-				objectDetectionCamRear = new ObjectDetectionIOPhotonVisionSim(VisionConstants.kLLName_Left + "_od",
-						"Fuel", VisionConstants.kRobotToCamera_Left, swerveSim::getSimulatedDriveTrainPose,
-						swerve::getFilteredPose, VisionConstants.kRobotToCamera_Left.getZ(),
-						Math.toDegrees(VisionConstants.kRobotToCamera_Left.getRotation().getZ()),
-						Math.toDegrees(VisionConstants.kRobotToCamera_Left.getRotation().getY()),
-						FieldConstants.kFuelDiameterNominal / 2.0, FieldConstants.kFuelDiameterNominal / 2.0,
-						Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, VisionConstants.kObjectDetectionMaxYaw,
-						VisionConstants.kSimCameraProperties,
-						() -> SimulatedArena.getInstance()
-								.getGamePiecesPosesByType("Fuel")
-								.stream()
-								.map(k -> new VisionTargetSim(k, new TargetModel(FieldConstants.kFuelDiameterNominal)))
-								.sorted(Comparator.comparingDouble(k -> k.getPose()
-										.toPose2d()
-										.getTranslation()
-										.getDistance(swerveSim.getSimulatedDriveTrainPose().getTranslation())))
-								// TODO May filter out some important data, filter out by FOV instead
-								.limit(50) // PV outputs at most 50
-								.toList());
-				objectDetection = new ObjectDetectionSubsystem("Fuel", objectDetectionCamRear);
-
 				SimulatedArena.getInstance().resetFieldForAuto();
 				break;
 
@@ -383,15 +325,9 @@ public class RobotContainer {
 				swerve = new SwerveSubsystem(thread, new SwerveModuleIO() {}, new SwerveModuleIO() {},
 						new SwerveModuleIO() {}, new SwerveModuleIO() {}, new Gyro(new GyroIO() {}), null,
 						VecBuilder.fill(0.1, 0.1, 0.05), new LibVisionIO() {});
-				objectDetection = new ObjectDetectionSubsystem("Fuel", new ObjectDetectionIO() {});
 			default:
 				break;
 		}
-
-		// Disable object detection initially
-		objectDetectionCamRear.setEnabled(false);
-		// Reset pipeline to use localization by default
-		objectDetectionCamRear.setPipeline(VisionConstants.kLocalizationPipelineId);
 
 		// Zero chassis
 		swerve.resetOdometry(AllianceUtil.flipWithAlliance(Constants.kStartingPose));
@@ -403,19 +339,16 @@ public class RobotContainer {
 		switch (Robot.kRobotMode) {
 			case kReal:
 				feeder = new Feeder(new FeederIOKraken());
-				hood = new Hood(new HoodIOKraken());
 				rollers = new Rollers(new RollerIOKraken());
 				break;
 
 			case kSim:
 				feeder = new Feeder(new FeederIOSim());
-				hood = new Hood(new HoodIOSim());
 				rollers = new Rollers(new RollerIOSim());
 				break;
 
 			case kReplay:
 				feeder = new Feeder(new FeederIO() {});
-				hood = new Hood(new HoodIO() {});
 				rollers = new Rollers(new RollerIO() {});
 				break;
 
@@ -449,7 +382,7 @@ public class RobotContainer {
 
 	/** Initializes the the superstructure. */
 	private void initSuperstructure() {
-		superstructure = new Superstructure(feeder, indexer, hood, rollers, intake, swerve);
+		superstructure = new Superstructure(feeder, indexer, rollers, intake, swerve);
 	}
 
 	/**
@@ -476,7 +409,6 @@ public class RobotContainer {
 	 */
 	public void zeroSubsytemEncoders() {
 		intake.zeroEncoders();
-		hood.zeroEncoders();
 		rollers.zeroEncoders();
 	}
 

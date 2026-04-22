@@ -6,7 +6,6 @@ import static frc.robot.subsystems.indexer.IndexerConstants.kReverseVoltage;
 
 import com.bobcats.lib.subsystem.rollers.GenericRollerSubsystem;
 import com.bobcats.lib.subsystem.rollers.GenericRollerSubsystem.GenericRollerVoltage;
-
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.subsystems.indexer.Indexer.IndexerGoal;
 import frc.robot.subsystems.indexer.io.IndexerIO;

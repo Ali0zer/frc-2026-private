@@ -8,13 +8,12 @@ import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Logs a flashing/strobing light to the dashboard, usually used with status
- * indicators to get the drivers' attention.
+ * Logs a flashing/strobing light to the dashboard, usually used with status indicators to get
+ * the drivers' attention.
  */
 public class LoggedFlashingDashboardColor {
 	/** A record instance representing a condition-color pair. */
-	public record FlashColor(BooleanSupplier condition, Color color) {
-	}
+	public record FlashColor(BooleanSupplier condition, Color color) {}
 
 	private final String m_key;
 	private final List<FlashColor> m_colors;
@@ -35,19 +34,15 @@ public class LoggedFlashingDashboardColor {
 	 *
 	 * @param ntKey              The NT key to log the color to.
 	 * @param flashPeriod        The period of the flash, in seconds.
-	 * @param colors             The map of colors to whether they should be active
-	 *                           when the flash
+	 * @param colors             The map of colors to whether they should be active when the flash
 	 *                           is considered on.
-	 * @param offColor           The map of colors to whether they should be active
-	 *                           when the flash
+	 * @param offColor           The map of colors to whether they should be active when the flash
 	 *                           is considered off.
-	 * @param activeWhenDisabled Whether the flash should still be active when the
-	 *                           robot is
+	 * @param activeWhenDisabled Whether the flash should still be active when the robot is
 	 *                           disabled.
 	 */
 	public LoggedFlashingDashboardColor(String ntKey, double flashPeriod, List<FlashColor> colors,
-			List<FlashColor> offColor,
-			boolean activeWhenDisabled) {
+			List<FlashColor> offColor, boolean activeWhenDisabled) {
 		m_key = ntKey;
 		m_offColors = offColor;
 		m_colors = colors;
@@ -66,12 +61,10 @@ public class LoggedFlashingDashboardColor {
 	 *
 	 * @param ntKey              The NT key to log the color to.
 	 * @param flashPeriod        The period of the flash, in seconds.
-	 * @param colors             The map of colors to whether they should be active
-	 *                           when the flash
+	 * @param colors             The map of colors to whether they should be active when the flash
 	 *                           is considered on.
 	 * @param offColor           The color when the flash is considered off.
-	 * @param activeWhenDisabled Whether the flash should still be active when the
-	 *                           robot is
+	 * @param activeWhenDisabled Whether the flash should still be active when the robot is
 	 *                           disabled.
 	 */
 	public LoggedFlashingDashboardColor(String ntKey, double flashPeriod, List<FlashColor> colors, Color offColor,
@@ -92,22 +85,14 @@ public class LoggedFlashingDashboardColor {
 
 		// Step cycle
 		m_cycleCount++;
-		if (m_cycleCount > m_cyclePeriod) {
-			m_cycleCount = 0;
-			m_flashOn = !m_flashOn;
-		}
+		if (m_cycleCount > m_cyclePeriod) { m_cycleCount = 0; m_flashOn = !m_flashOn; }
 
 		// Choose appropriate map
 		boolean isOn = m_flashOn && (m_activeWhelDisabled || !DriverStation.isDisabled());
 		List<FlashColor> colorMap = isOn ? m_colors : m_offColors;
 
 		// Find first condition match
-		for (var pair : colorMap) {
-			if (pair.condition.getAsBoolean()) {
-				color = pair.color;
-				break;
-			}
-		}
+		for (var pair : colorMap) { if (pair.condition.getAsBoolean()) { color = pair.color; break; } }
 
 		// Log data
 		m_latestColor = color;
@@ -119,35 +104,26 @@ public class LoggedFlashingDashboardColor {
 	 *
 	 * @return The latest updated flash color.
 	 */
-	public Color getLatestColor() {
-		return m_latestColor;
-	}
+	public Color getLatestColor() { return m_latestColor; }
 
 	/**
 	 * Returns whether the flash is on.
 	 *
 	 * @return Whether the flash is on.
 	 */
-	public boolean isFlashOn() {
-		return m_flashOn;
-	}
+	public boolean isFlashOn() { return m_flashOn; }
 
 	/**
 	 * Returns whether the flash should still be active when the robot is disabled.
 	 *
 	 * @return Whether the flash should still be active when the robot is disabled.
 	 */
-	public boolean isActiveWhenDisabled() {
-		return m_activeWhelDisabled;
-	}
+	public boolean isActiveWhenDisabled() { return m_activeWhelDisabled; }
 
 	/**
 	 * Sets whether the flash should still be active when the robot is disabled.
 	 *
-	 * @param val Whether the flash should still be active when the robot is
-	 *            disabled.
+	 * @param val Whether the flash should still be active when the robot is disabled.
 	 */
-	public void setActiveWhenDisabled(boolean val) {
-		m_activeWhelDisabled = val;
-	}
+	public void setActiveWhenDisabled(boolean val) { m_activeWhelDisabled = val; }
 }

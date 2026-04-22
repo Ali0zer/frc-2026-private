@@ -2,7 +2,9 @@ package frc.robot.subsystems.shooter.rollers;
 
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotorID;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotor1ID;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotor2ID;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotor3ID;
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kMainMotorID;
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kMaxAllowedRPM;
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kMaxTemperature;
@@ -37,10 +39,20 @@ public class Rollers extends SubsystemBase {
 	private Alert m_mainMotorOverheatAlert = new Alert("Roller main motor is overheating! (ID: " + kMainMotorID + ")",
 			AlertType.kWarning);
 
-	private Alert m_followerMotorDisconnectedAlert = new Alert(
-			"Roller follower motor has disconnected! (ID " + kFollowerMotorID + ")", AlertType.kError);
-	private Alert m_followerMotorOverheatAlert = new Alert(
-			"Roller follower motor is overheating! (ID: " + kFollowerMotorID + ")", AlertType.kWarning);
+	private Alert m_followerMotor1DisconnectedAlert = new Alert(
+			"Roller follower motor has disconnected! (ID " + kFollowerMotor1ID + ")", AlertType.kError);
+	private Alert m_followerMotor1OverheatAlert = new Alert(
+			"Roller follower motor is overheating! (ID: " + kFollowerMotor1ID + ")", AlertType.kWarning);
+
+	private Alert m_followerMotor2DisconnectedAlert = new Alert(
+			"Roller follower motor has disconnected! (ID " + kFollowerMotor2ID + ")", AlertType.kError);
+	private Alert m_followerMotor2OverheatAlert = new Alert(
+			"Roller follower motor is overheating! (ID: " + kFollowerMotor2ID + ")", AlertType.kWarning);
+
+	private Alert m_followerMotor3DisconnectedAlert = new Alert(
+			"Roller follower motor has disconnected! (ID " + kFollowerMotor3ID + ")", AlertType.kError);
+	private Alert m_followerMotor3OverheatAlert = new Alert(
+			"Roller follower motor is overheating! (ID: " + kFollowerMotor3ID + ")", AlertType.kWarning);
 
 	private SysIdRoutine m_routine;
 
@@ -74,13 +86,18 @@ public class Rollers extends SubsystemBase {
 		if (DriverStation.isDisabled()) { m_io.stop(); m_setpoint = 0; }
 
 		m_mainMotorOverheatAlert.set(m_inputs.temperatureCelsiusMain > kMaxTemperature);
-		m_followerMotorOverheatAlert.set(m_inputs.temperatureCelsiusFollower > kMaxTemperature);
+		m_followerMotor1OverheatAlert.set(m_inputs.temperatureCelsiusFollower1 > kMaxTemperature);
+		m_followerMotor2OverheatAlert.set(m_inputs.temperatureCelsiusFollower2 > kMaxTemperature);
+		m_followerMotor3OverheatAlert.set(m_inputs.temperatureCelsiusFollower3 > kMaxTemperature);
 
 		Logger.recordOutput("Rollers/EncodersZeroed", areEncodersZeroed());
 		Logger.recordOutput("Rollers/NearSetpoint", isNearSetpoint());
 
 		m_mainMotorDisconnectedAlert.set(!m_inputs.mainMotorConnected);
-		m_followerMotorDisconnectedAlert.set(!m_inputs.followerMotorConnected);
+		m_followerMotor1DisconnectedAlert.set(!m_inputs.follower1MotorConnected);
+		m_followerMotor2DisconnectedAlert.set(!m_inputs.follower2MotorConnected);
+		m_followerMotor3DisconnectedAlert.set(!m_inputs.follower3MotorConnected);
+
 		Tracer.finish("RollersPeriodic");
 	}
 

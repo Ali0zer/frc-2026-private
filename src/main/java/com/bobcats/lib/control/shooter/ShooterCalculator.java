@@ -106,13 +106,12 @@ public class ShooterCalculator {
 		// Calculate distance from turret's pivot to the target
 		double distToTarget = target.getDistance(robotPose2d.getTranslation());
 		// Calculate field-relative turret velocity
+		var predRobotAngle = robotPosition.getRotation();
 		// Obtained via v = w x r
-		double vt_x = robotVelocity.vxMetersPerSecond
-				+ robotVelocity.omegaRadiansPerSecond * (robotToTurret.getY() * Math.cos(robotAngle.getRadians())
-						- robotToTurret.getX() * Math.sin(robotAngle.getRadians()));
-		double vt_y = robotVelocity.vyMetersPerSecond
-				+ robotVelocity.omegaRadiansPerSecond * (robotToTurret.getX() * Math.cos(robotAngle.getRadians())
-						- robotToTurret.getY() * Math.sin(robotAngle.getRadians()));
+		double vt_x = robotVelocity.vxMetersPerSecond + robotVelocity.omegaRadiansPerSecond
+				* (robotToTurret.getY() * predRobotAngle.getCos() - robotToTurret.getX() * predRobotAngle.getSin());
+		double vt_y = robotVelocity.vyMetersPerSecond + robotVelocity.omegaRadiansPerSecond
+				* (robotToTurret.getX() * predRobotAngle.getCos() - robotToTurret.getY() * predRobotAngle.getSin());
 
 		double timeOfFlight = 0;
 		Pose2d offsetedPose = robotPose2d;
@@ -146,7 +145,8 @@ public class ShooterCalculator {
 						m_descriptor.getBarrelLength() * Math.sin(hoodAngle)),
 				new Rotation3d(0.0, -hoodAngle, turretAngleField.getRadians()));
 		Pose3d turretPosePivot = new Pose3d(robotPosition.getX(), robotPosition.getY(), robotPosition3d.getZ(),
-				robotPosition3d.getRotation()).transformBy(m_descriptor.getRobotToTurret());
+				new Rotation3d(robotPosition3d.getRotation().getX(), robotPosition3d.getRotation().getY(),
+						robotPosition.getRotation().getRadians())).transformBy(m_descriptor.getRobotToTurret());
 		// Final exit pose after all transforms
 		Pose3d exitPose = turretPosePivot.transformBy(hoodTransform);
 		// v = w * r * e
@@ -315,6 +315,20 @@ public class ShooterCalculator {
 		}
 		Logger.recordOutput(loggerKey, poses.toArray(new Pose3d[poses.size()]));
 		return newProjectiles;
+	}
+
+	/**
+	 * Creates the 2D output (RPM, angle, time-of-flight) array for bilinear interpolators in the
+	 * case that there is one desired height difference parameter.
+	 *
+	 * @param param The output data, must match the distance map's order.
+	 * @return The 2D output map for bilinear interpolation.
+	 */
+	public static double[][] createSingleHeightParameterMap(double[] param) {
+		double[][] map = new double[param.length][2];
+		for (int i = 0; i < param.length; i++) { double rpm = param[i]; map[i] = new double[] { rpm, rpm }; }
+
+		return map;
 	}
 
 	// Utilities //

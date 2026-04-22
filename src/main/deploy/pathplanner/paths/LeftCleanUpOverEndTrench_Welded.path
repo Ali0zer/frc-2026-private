@@ -1,0 +1,178 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.691,
+        "y": 7.458326
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.378055626085313,
+        "y": 7.831615340024154
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.467340650334463,
+        "y": 6.141237464424316
+      },
+      "prevControl": {
+        "x": 7.2868180335605155,
+        "y": 6.4028624147333195
+      },
+      "nextControl": {
+        "x": 7.962182549628039,
+        "y": 5.424080857528849
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.826920718744219,
+        "y": 2.0623141464554338
+      },
+      "prevControl": {
+        "x": 7.255754812495738,
+        "y": 2.184236089184882
+      },
+      "nextControl": {
+        "x": 8.261544272144668,
+        "y": 1.9695387419593784
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.519989981639885,
+        "y": 2.0623141464554338
+      },
+      "prevControl": {
+        "x": 8.302416318950968,
+        "y": 1.9391812860804343
+      },
+      "nextControl": {
+        "x": 8.737563644328802,
+        "y": 2.185447006830434
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.519989981639885,
+        "y": 5.993538431932077
+      },
+      "prevControl": {
+        "x": 8.525338085354939,
+        "y": 4.864361233974562
+      },
+      "nextControl": {
+        "x": 8.514480138767889,
+        "y": 7.156864587682298
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.691,
+        "y": 7.458326
+      },
+      "prevControl": {
+        "x": 6.37426395957233,
+        "y": 7.8467820060760864
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": 133.0353237934458
+    },
+    {
+      "waypointRelativePos": 1.0534591194968552,
+      "rotationDegrees": 113.59007630639621
+    },
+    {
+      "waypointRelativePos": 1.3128930817610063,
+      "rotationDegrees": 94.39632547304335
+    },
+    {
+      "waypointRelativePos": 1.6352201257861634,
+      "rotationDegrees": 90.26539380608871
+    },
+    {
+      "waypointRelativePos": 1.941823899371069,
+      "rotationDegrees": 128.22522605894358
+    },
+    {
+      "waypointRelativePos": 2.4056603773584904,
+      "rotationDegrees": -179.44594595204939
+    },
+    {
+      "waypointRelativePos": 3.231132075471713,
+      "rotationDegrees": -115.89612578710913
+    },
+    {
+      "waypointRelativePos": 3.4276729559748413,
+      "rotationDegrees": -90.22844900760784
+    },
+    {
+      "waypointRelativePos": 3.899371069182413,
+      "rotationDegrees": -91.63665082593657
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "intake_marker",
+      "waypointRelativePos": 0.26032315978456033,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "OpenIntake"
+        }
+      }
+    },
+    {
+      "name": "intake_close_marker",
+      "waypointRelativePos": 4.4254937163375105,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "CloseIntake"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.45,
+    "maxAcceleration": 4.5,
+    "maxAngularVelocity": 720.0,
+    "maxAngularAcceleration": 1440.0,
+    "nominalVoltage": 12.7,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": 0.0
+  },
+  "reversed": false,
+  "folder": "NeutralAutonLooping_Welded",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": true
+}

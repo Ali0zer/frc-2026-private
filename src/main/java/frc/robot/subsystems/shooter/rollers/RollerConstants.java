@@ -10,13 +10,15 @@ import edu.wpi.first.math.system.plant.DCMotor;
 public class RollerConstants {
 	// Motor IDs
 	public static final int kMainMotorID = 53;
-	public static final int kFollowerMotorID = 54;
+	public static final int kFollowerMotor1ID = 54;
+	public static final int kFollowerMotor2ID = 55;
+	public static final int kFollowerMotor3ID = 56;
 	public static final String kMotorCANBus = ""; // Main RIO bus
 
 	// Control constants (PID-SVA)
 	// Units: Volts, RPM
 	public static final double kP = 0.001, kD = 0, kS = 0.0, kV = 0.0034339;
-	public static final double kPSim = 0.001, kDSim = 0, kSSim = 0.0, kVSim = 0.0034339;
+	public static final double kPSim = 1e-6 / 60, kDSim = 0, kSSim = 0.0, kVSim = 0.0033151;
 	public static final boolean kIsFOC = false;
 
 	public static final double kMaxTemperature = 80;
@@ -37,9 +39,11 @@ public class RollerConstants {
 
 	// Inversions
 	public static final boolean kMotorInverted = true;
-	public static final boolean kFollowerOpposesMain = true;
+	public static final boolean kFollower1OpposesMain = true;
+	public static final boolean kFollower2OpposesMain = false;
+	public static final boolean kFollower3OpposesMain = false;
 
 	// Simulation data
-	public static final DCMotor kGearbox = DCMotor.getKrakenX60Foc(2);
+	public static final DCMotor kGearbox = DCMotor.getKrakenX60(4);
 	public static final double kMomentOfInertia = 0.000367211;
 }

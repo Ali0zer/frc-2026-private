@@ -2,12 +2,10 @@ package frc.robot.subsystems.superstructure;
 
 import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.constants.FieldConstants.path;
+import static frc.robot.subsystems.intake.IntakeConstants.kArmClosedAngle;
 import static frc.robot.subsystems.intake.IntakeConstants.kArmOpenedAngle;
 import static frc.robot.subsystems.intake.IntakeConstants.kArmPushFuelAngle;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kExitAngleOffset;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationAngle;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationYaw;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCentralPivotRobotRelative;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kArcPointAllowedDistanceError;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kAverageShotTime;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kChassisStateSwitchDebounce;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kCorralAlignPath;
@@ -15,16 +13,19 @@ import static frc.robot.subsystems.superstructure.SuperstructureConstants.kCorra
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kFlashPeriod;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kFuelCapacity;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kFuelProjectile;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kHoodCalibrationYaw;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kHoodCentralPivotRobotRelative;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeArmMaxHorizontalExtension;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeFlashOffColor;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeFlashRollingColor;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeOscillateStartDelay;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kIntakeRollerVelocityThreshold;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK0Hub;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK0Pass;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK1Hub;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitK1Pass;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kLimitVelocityWhenShootingTeleop;
-import static frc.robot.subsystems.superstructure.SuperstructureConstants.kPassFuelAcceptDistance;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kMaxOscillationTime;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kPassTrajOptSteps;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kPrefireFlashColor;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kPrefireFlashColorSecondary;
@@ -38,22 +39,8 @@ import static frc.robot.subsystems.superstructure.SuperstructureConstants.kShoot
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kShooterReadyFlashColor;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kShooterStateStaleTimeThreshold;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kShootingFlightTimeFudgeFactors;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kStaticShotAngle;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.kSwerveIdleVelocityThreshold;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-
-import org.dyn4j.geometry.Rectangle;
-import org.dyn4j.geometry.Vector2;
-import org.ironmaple.simulation.IntakeSimulation;
-import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
-import org.json.simple.parser.ParseException;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import com.bobcats.lib.auto.LineTrajectoryUtils;
 import com.bobcats.lib.auto.LineTrajectoryUtils.Line;
@@ -69,7 +56,6 @@ import com.bobcats.lib.utils.Tracer;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
-
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -78,6 +64,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -97,13 +84,24 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.shooter.feeder.Feeder;
-import frc.robot.subsystems.shooter.hood.Hood;
 import frc.robot.subsystems.shooter.rollers.Rollers;
 import frc.robot.subsystems.swerve.SwerveConstants.AutoConstants;
-import frc.robot.subsystems.swerve.SwerveConstants.DriveConstants;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.util.SeasonUtils;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
+import org.dyn4j.geometry.Rectangle;
+import org.dyn4j.geometry.Vector2;
+import org.ironmaple.simulation.IntakeSimulation;
+import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
+import org.json.simple.parser.ParseException;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 // State Notes:
 // Robot is assumed to have 3 state categories:
@@ -114,8 +112,7 @@ import lombok.AllArgsConstructor;
 // -> Objective Oriented: Whether the robot is actively trying to either shoot or pass fuel
 
 /**
- * The finite-state-machine superstructure subsystem that manages the overall
- * state of the
+ * The finite-state-machine superstructure subsystem that manages the overall state of the
  * robot.
  */
 public class Superstructure extends SubsystemBase {
@@ -156,7 +153,7 @@ public class Superstructure extends SubsystemBase {
 
 	// For testing and calib purposes, overriding setpoints
 	public boolean setpointOverride = false;
-	public LoggedDashboardChooser<Boolean> overrideRollerSetpointChooser, overrideHoodSetpointChooser;
+	public LoggedDashboardChooser<Boolean> overrideRollerSetpointChooser;
 
 	private Debouncer m_chassisStateDebouncer = new Debouncer(kChassisStateSwitchDebounce, DebounceType.kBoth);
 
@@ -165,10 +162,10 @@ public class Superstructure extends SubsystemBase {
 			AlertType.kError);
 
 	// Shooter state data
-	private final ShooterCalculator m_shooterCalculator;
+	public final ShooterCalculator shooterCalculator;
 	private ShooterParameters m_latestParameters = new ShooterParameters(false,
-			Rotation2d.fromDegrees(kHoodCalibrationAngle), Rotation2d.kZero, 0, kHoodCalibrationAngle, 0,
-			Translation3d.kZero, Vector3.kZero, 0);
+			Rotation2d.fromDegrees(kStaticShotAngle), Rotation2d.kZero, 0, kStaticShotAngle, 0, Translation3d.kZero,
+			Vector3.kZero, 0);
 	private OptimizedLine m_latestPassLineOpt = new OptimizedLine(new Line(Translation2d.kZero, Translation2d.kZero),
 			false);
 	private List<ShooterProjectile> m_projectiles = new ArrayList<>();
@@ -177,17 +174,17 @@ public class Superstructure extends SubsystemBase {
 	public final SuperstructureVisualizer superstructureVisualizer;
 	private boolean m_isFeeding = false;
 
+	public boolean autoHaltShots = false;
+
 	private IntakeSimulation m_intakeSim;
 
 	private LoggedFlashingDashboardColor m_shooterReadyWarning, m_prefireWarning, m_intakeWarning;
 
 	private Timer m_intakeOscillationTimer = new Timer();
-	private static final double kMaxOscillationTime = 3.0;
 
 	// Subsystems
 	private final Feeder m_feeder;
 	private final Indexer m_indexer;
-	private final Hood m_hood;
 	private final Rollers m_rollers;
 	private final Intake m_intake;
 	private final SwerveSubsystem m_swerve;
@@ -196,31 +193,25 @@ public class Superstructure extends SubsystemBase {
 	 * Constructs a new Superstructure.
 	 *
 	 * @param feeder  The feeder subsystem.
-	 * @param indexer  The indexer subsystem.
-	 * @param hood    The hood subsytem.
+	 * @param indexer The indexer subsystem.
 	 * @param rollers The roller subsytem.
 	 * @param intake  The intake subsystem.
 	 * @param swerve  The swerve subsystem.
 	 */
 	@SuppressWarnings("resource")
-	public Superstructure(Feeder feeder, Indexer indexer, Hood hood, Rollers rollers, Intake intake, SwerveSubsystem swerve) {
+	public Superstructure(Feeder feeder, Indexer indexer, Rollers rollers, Intake intake, SwerveSubsystem swerve) {
 		m_feeder = feeder;
 		m_indexer = indexer;
-		m_hood = hood;
 		m_rollers = rollers;
 		m_intake = intake;
 		m_swerve = swerve;
 
-		m_shooterCalculator = new ShooterCalculator(kShooterDescriptor);
-		superstructureVisualizer = new SuperstructureVisualizer(m_hood, m_intake);
+		shooterCalculator = new ShooterCalculator(kShooterDescriptor);
+		superstructureVisualizer = new SuperstructureVisualizer(m_intake);
 
 		m_isFallbackScoring = new LoggedDashboardChooser<>("Fallback Scoring Mode");
 		m_isFallbackScoring.addDefaultOption("Disabled", false);
 		m_isFallbackScoring.addOption("Enabled", true);
-
-		overrideHoodSetpointChooser = new LoggedDashboardChooser<>("Test Override Hood Setpoints");
-		overrideHoodSetpointChooser.addDefaultOption("Disabled", false);
-		overrideHoodSetpointChooser.addOption("Enabled", true);
 
 		overrideRollerSetpointChooser = new LoggedDashboardChooser<>("Test Override Roller Setpoints");
 		overrideRollerSetpointChooser.addDefaultOption("Disabled", false);
@@ -254,7 +245,7 @@ public class Superstructure extends SubsystemBase {
 				try {
 					// Avoid concurrent modification issues
 					synchronized (m_projectiles) {
-						m_projectiles = m_shooterCalculator.updateVisualizer("FuelProjectiles", m_projectiles);
+						m_projectiles = shooterCalculator.updateVisualizer("FuelProjectiles", m_projectiles);
 					}
 				} catch (Exception e) {}
 			});
@@ -262,15 +253,12 @@ public class Superstructure extends SubsystemBase {
 			trajectoryThread.startPeriodic(1.0 / 1000.0);
 		}
 
-		m_shooterReadyWarning = new LoggedFlashingDashboardColor(
-				"Superstructure/ShooterReadyColor", kFlashPeriod, List
-						.of(new FlashColor(() -> !m_isObjectiveOriented, kShooterReadyFlashColor),
-								new FlashColor(() -> m_rollers.isNearSetpoint() && m_hood.isNearSetpoint()
-										&& m_swerve.ArbitraryPIDAngular.atSetpoint(), kShooterReadyFlashColor),
-								new FlashColor(
-										() -> !(m_rollers.isNearSetpoint() && m_hood.isNearSetpoint()
-												&& m_swerve.ArbitraryPIDAngular.atSetpoint()),
-										kShooterNotReadyFlashColor)),
+		m_shooterReadyWarning = new LoggedFlashingDashboardColor("Superstructure/ShooterReadyColor", kFlashPeriod,
+				List.of(new FlashColor(() -> !m_isObjectiveOriented, kShooterReadyFlashColor),
+						new FlashColor(() -> m_rollers.isNearSetpoint() && m_swerve.ArbitraryPIDAngular.atSetpoint(),
+								kShooterReadyFlashColor),
+						new FlashColor(() -> !(m_rollers.isNearSetpoint() && m_swerve.ArbitraryPIDAngular.atSetpoint()),
+								kShooterNotReadyFlashColor)),
 				List.of(new FlashColor(() -> !m_isObjectiveOriented, kShooterReadyFlashColor),
 						new FlashColor(() -> true, kShooterFlashOffColor)),
 				false);
@@ -302,14 +290,11 @@ public class Superstructure extends SubsystemBase {
 		if (m_chassisStateDebouncer.calculate(Math.hypot(m_swerve.getChassisSpeedsFieldRelative().vxMetersPerSecond,
 				m_swerve.getChassisSpeedsFieldRelative().vyMetersPerSecond) >= kSwerveIdleVelocityThreshold))
 			m_chassisState = ChassisState.kChassisDrive;
-		else
-			m_chassisState = ChassisState.kChassisIdle;
+		else m_chassisState = ChassisState.kChassisIdle;
 
 		if (Robot.isSimulation()) {
-			if (m_primaryState == PrimaryState.kIntaking)
-				m_intakeSim.startIntake();
-			else
-				m_intakeSim.stopIntake();
+			if (m_primaryState == PrimaryState.kIntaking) m_intakeSim.startIntake();
+			else m_intakeSim.stopIntake();
 
 			Logger.recordOutput("Superstructure/SimHopperFuelCount", m_intakeSim.getGamePiecesAmount());
 		}
@@ -334,6 +319,7 @@ public class Superstructure extends SubsystemBase {
 		Logger.recordOutput("CShooterControl/LatestShootingAngVel", DriveCommands.LatestShootingAngularVelocity);
 		Logger.recordOutput("CShooterControl/NearSetpoint", m_swerve.ArbitraryPIDAngular.atSetpoint());
 		Logger.recordOutput("CShooterControl/Setpoint", m_swerve.ArbitraryPIDAngular.getSetpoint());
+		Logger.recordOutput("CShooterControl/Goal", m_swerve.ArbitraryPIDAngular.getGoal());
 
 		Tracer.finish("SuperstructurePeriodic");
 	}
@@ -367,8 +353,7 @@ public class Superstructure extends SubsystemBase {
 	 * @return Whether mechanisms are at their respective setpoints.
 	 */
 	public boolean areRumbleMechanismsAtSetpoints() {
-		return m_intake.isArmNearSetpoint() && m_hood.isNearSetpoint() && m_rollers.isNearSetpoint()
-				&& m_swerve.ArbitraryPIDAngular.atSetpoint();
+		return m_intake.isArmNearSetpoint() && m_rollers.isNearSetpoint() && m_swerve.ArbitraryPIDAngular.atSetpoint();
 	}
 
 	// Primary State Commands //
@@ -407,7 +392,7 @@ public class Superstructure extends SubsystemBase {
 	public Command stopIntake() {
 		return Commands.runOnce(m_intake::stopRollers)
 				.onlyIf(() -> !m_isFeeding)
-				.andThen(Commands.waitUntil(m_intake::isArmNearSetpoint))
+				// .andThen(Commands.waitUntil(m_intake::isArmNearSetpoint))
 				.andThen(Commands.runOnce(() -> m_primaryState = PrimaryState.kPrimaryIdle))
 				.onlyIf(() -> m_primaryState == PrimaryState.kIntaking || m_primaryState == PrimaryState.kOuttaking)
 				.withName("Intake.Stop");
@@ -416,15 +401,13 @@ public class Superstructure extends SubsystemBase {
 	// Action State Commands //
 
 	/**
-	 * Sets whether or not the robot should focus on a game objective such as
-	 * scoring or passing.
+	 * Sets whether or not the robot should focus on a game objective such as scoring or passing.
 	 *
 	 * @param isObjective Whether the robot should focus on an objective.
 	 */
 	public void setObjectiveOriented(boolean isObjective) {
 		m_isObjectiveOriented = isObjective;
-		if (!isObjective)
-			m_actionState = ActionState.kActionIdle;
+		if (!isObjective) m_actionState = ActionState.kActionIdle;
 	}
 
 	/**
@@ -432,36 +415,35 @@ public class Superstructure extends SubsystemBase {
 	 *
 	 * @return Whether the robot is objective oriented.
 	 */
-	public boolean isObjectiveOriented() {
-		return m_isObjectiveOriented;
-	}
+	public boolean isObjectiveOriented() { return m_isObjectiveOriented; }
 
 	/**
 	 * Returns whether the robot is using fallback scoring presets.
 	 *
 	 * @return Whether the robot is using fallback scoring presets.
 	 */
-	public boolean isFallbackScoring() {
-		return m_isFallbackScoring.get();
-	}
+	public boolean isFallbackScoring() { return m_isFallbackScoring.get(); }
 
 	/**
 	 * Returns an objective command that scores into the hub as long as it's ran.
 	 *
-	 * @param isFallback Whether the fallback shooting parameters should be used in
-	 *                   case something
-	 *                   goes wrong.
 	 * @return The objective scoring command.
 	 */
 	public Command objectiveScoreHub() {
 		return Commands.runOnce(() -> m_actionState = ActionState.kScoreFuelHub)
 				.andThen(new DeferredCommand(
 						() -> shooterCommand(this::getAllianceHubLocation,
-								() -> (SeasonUtils.getTimeUntilHubShift() <= m_latestParameters.timeOfFlight()
-										+ kShootingFlightTimeFudgeFactors.get(getAllianceHubLocation().getDistance(
-												new Translation3d(m_swerve.getFilteredPose().getTranslation())))
-										&& isLatestShooterParamsRecent()) ? true : SeasonUtils.isAllianceHubActive()),
-						Set.of(m_rollers, m_hood, m_feeder)))
+								() -> ((SeasonUtils.getTimeUntilHubShift() <= m_latestParameters
+										.timeOfFlight()
+										+ kShootingFlightTimeFudgeFactors
+												.get(getAllianceHubLocation().getDistance(
+														new Translation3d(m_swerve.getFilteredPose().getTranslation())))
+										&& isLatestShooterParamsRecent()) ? true : SeasonUtils.isAllianceHubActive())
+										&& (DriverStation.isAutonomous() || m_swerve.getFilteredPose()
+												.getTranslation()
+												.getDistance(
+														DriveCommands.LatestArcPoint) <= kArcPointAllowedDistanceError)),
+						Set.of(m_rollers, m_feeder)))
 				.onlyWhile(() -> m_isObjectiveOriented && m_actionState == ActionState.kScoreFuelHub)
 				.onlyIf(() -> m_isObjectiveOriented && m_actionState == ActionState.kActionIdle
 						&& m_primaryState != PrimaryState.kOuttaking)
@@ -469,8 +451,7 @@ public class Superstructure extends SubsystemBase {
 	}
 
 	/**
-	 * Returns an objective command that passes fuel to the alliance zone as long as
-	 * it's ran.
+	 * Returns an objective command that passes fuel to the alliance zone as long as it's ran.
 	 *
 	 * @return The objective scoring command.
 	 */
@@ -479,7 +460,7 @@ public class Superstructure extends SubsystemBase {
 				.andThen(new DeferredCommand(
 						() -> shooterCommand(this::getBestAllianceFuelPassLocation,
 								() -> !isFallbackScoring() && m_latestPassLineOpt.success()),
-						Set.of(m_rollers, m_hood, m_feeder)))
+						Set.of(m_rollers, m_feeder)))
 				.onlyWhile(() -> m_isObjectiveOriented && m_actionState == ActionState.kPassFuelAlliance)
 				.onlyIf(() -> m_isObjectiveOriented && m_actionState != ActionState.kPassFuelAlliance
 						&& m_primaryState != PrimaryState.kOuttaking)
@@ -495,7 +476,6 @@ public class Superstructure extends SubsystemBase {
 		return Commands.runOnce(() -> {
 			DriveCommands.LatestShootingAngularVelocity = 0;
 			m_rollers.stop();
-			m_hood.stop();
 			stopFeeding();
 			m_actionState = ActionState.kActionIdle;
 		}).withName("Shooter.Stop");
@@ -521,25 +501,32 @@ public class Superstructure extends SubsystemBase {
 	}
 
 	/**
-	 * Returns the absolute maximum chassis speeds at the given state.
+	 * Returns the desaturated aiming speeds.
 	 *
-	 * @return The chassis speed limit.
+	 * @param speeds The desired field-relative speeds.
+	 * @return The desaturated field-relative chassis speeds.
 	 */
-	public double getChassisLimitVelocity() {
-		if (!kLimitVelocityWhenShootingTeleop || DriverStation.isAutonomous())
-			return DriveConstants.kMaxSpeedMetersPerSecond;
+	public ChassisSpeeds desaturateShootingSpeeds(ChassisSpeeds speeds) {
+		if (!kLimitVelocityWhenShootingTeleop || DriverStation.isAutonomous()) return speeds;
+
+		double vmag = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
+		double scale = 1;
 		if (m_actionState == ActionState.kScoreFuelHub) {
 			double d = getAllianceHubLocation().toTranslation2d()
 					.getDistance(m_swerve.getFilteredPose().getTranslation());
-			return kLimitK0Hub + kLimitK1Hub * d * d / (1 + d * d);
+			double vlim = kLimitK0Hub + kLimitK1Hub * d * d / (1 + d * d);
+
+			scale = vmag > vlim ? vlim / vmag : 1;
 		} else if (m_actionState == ActionState.kPassFuelAlliance) {
 			double d = m_latestPassLineOpt.optimizedLine()
 					.end()
 					.getDistance(m_swerve.getFilteredPose().getTranslation());
-			return kLimitK0Pass + kLimitK1Pass * d * d / (1 + d * d);
+			double vlim = kLimitK0Pass + kLimitK1Pass * d * d / (1 + d * d);
+			scale = vmag > vlim ? vlim / vmag : 1;
 		}
 
-		return DriveConstants.kMaxSpeedMetersPerSecond;
+		return new ChassisSpeeds(speeds.vxMetersPerSecond * scale, speeds.vyMetersPerSecond * scale,
+				speeds.omegaRadiansPerSecond);
 	}
 
 	/**
@@ -547,9 +534,7 @@ public class Superstructure extends SubsystemBase {
 	 *
 	 * @return The latest shooter parameters.
 	 */
-	public ShooterParameters getLatestShooterParameters() {
-		return m_latestParameters;
-	}
+	public ShooterParameters getLatestShooterParameters() { return m_latestParameters; }
 
 	/**
 	 * Returns whether the latest shot parameters are stale or not.
@@ -565,18 +550,15 @@ public class Superstructure extends SubsystemBase {
 	 *
 	 * @return The timestamp of the last update to the shooter parameters.
 	 */
-	public double getLastShooterParameterUpdate() {
-		return m_lastShooterUpdate;
-	}
+	public double getLastShooterParameterUpdate() { return m_lastShooterUpdate; }
 
 	// Private Utils //
 
 	/** Starts feeding the shooter. */
 	private void startFeeding() {
-		if (m_isFeeding)
-			return;
+		if (m_isFeeding) return;
 		m_feeder.feed();
-		
+
 		m_intake.runIntakeRollers();
 		m_indexer.runForward();
 		m_isFeeding = true;
@@ -584,12 +566,10 @@ public class Superstructure extends SubsystemBase {
 
 	/** Stops feeding the shooter. */
 	private void stopFeeding() {
-		if (!m_isFeeding)
-			return;
+		if (!m_isFeeding) return;
 		m_feeder.stop();
 
-		if (m_primaryState != PrimaryState.kIntaking)
-		 	m_intake.stopRollers();
+		if (m_primaryState != PrimaryState.kIntaking) m_intake.stopRollers();
 		m_indexer.stop();
 
 		m_isFeeding = false;
@@ -598,97 +578,15 @@ public class Superstructure extends SubsystemBase {
 	/** Runs the shooter to hit the given target. */
 	private Command shooterCommand(Supplier<Translation3d> target, BooleanSupplier firingCondition) {
 		BooleanSupplier canFire = () -> isLatestShooterParamsRecent() && m_latestParameters != null
-				&& m_latestParameters.isValid() && m_hood.isNearSetpoint() && m_swerve.ArbitraryPIDAngular.atSetpoint()
-				&& m_rollers.isNearSetpoint() && firingCondition.getAsBoolean();
+				&& m_latestParameters.isValid() && m_swerve.ArbitraryPIDAngular.atSetpoint()
+				&& m_rollers.isNearSetpoint() && firingCondition.getAsBoolean() && !autoHaltShots;
 
-		if (Robot.kRobotMode == RobotMode.kSim)
-			return Commands.run(() -> {
-				// Continuously update shooter setpoints
-				updateShooterSetpointState(target.get());
-				if (m_latestParameters != null && m_latestParameters.isValid()) {
-					if (!overrideRollerSetpointChooser.get())
-						m_rollers.setRollerVelocity(m_latestParameters.rollerSpeedsRPM());
-					if (!overrideHoodSetpointChooser.get())
-						m_hood.setHoodAngle(kExitAngleOffset - m_latestParameters.hoodAngleDegs());
-				}
-
-				// Update commanded shot angular velocity
-				DriveCommands.LatestShootingAngularVelocity = m_swerve.ArbitraryPIDAngular.calculate(
-						m_swerve.getRobotRotation().getRadians(),
-						getLatestShooterParameters().turretAngleField().getRadians()
-								- Math.toRadians(kHoodCalibrationYaw));
-
-				// Feed only if the shot is possible
-				if (canFire.getAsBoolean())
-					startFeeding();
-
-				// Spawn projectile if there are game pieces in the hopper
-				if (canFire.getAsBoolean() && Timer.getFPGATimestamp() - m_lastFuelShotSim >= kAverageShotTime
-						&& m_intakeSim.getGamePiecesAmount() > 0) {
-					// startFeeding();
-
-					// Make sure to use current state values, and not the ideal values
-					var currState = m_shooterCalculator.computeCurrentExitParameters(m_latestParameters,
-							kExitAngleOffset - m_hood.getAngle(), kHoodCalibrationYaw, m_rollers.getVelocity(),
-							new Pose3d(RobotContainer.getInstance().swerveSim.getSimulatedDriveTrainPose()),
-							RobotContainer.getInstance().swerveSim.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-							kFuelProjectile);
-					m_lastFuelShotSim = Timer.getFPGATimestamp();
-					m_projectiles.add(new ShooterProjectile(kFuelProjectile, currState.exitVelocityVec3(),
-							new Pose3d(currState.exitPose(), Rotation3d.kZero)));
-					m_intakeSim.obtainGamePieceFromIntake();
-				}
-			})
-					// Stop feeder when unable to fire
-					.alongWith(Commands.run(() -> {
-						if (!canFire.getAsBoolean())
-							stopFeeding();
-					}))
-					.alongWith(Commands.run(() -> {
-						// Oscillate intake
-						if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
-								&& canFire.getAsBoolean()) {
-							if (m_intake.getLatestArmSetpoint() == kArmPushFuelAngle && (m_intake.isArmNearSetpoint()
-									|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
-								m_intake.openIntake();
-								m_intakeOscillationTimer.restart();
-							} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle
-									&& (m_intake.isArmNearSetpoint()
-											|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
-								m_intake.intakePushAngle();
-								m_intakeOscillationTimer.restart();
-							} else if (m_intake.getLatestArmSetpoint() != kArmOpenedAngle
-									&& m_intake.getLatestArmSetpoint() != kArmPushFuelAngle) {
-								m_intake.openIntake();
-							} else if (!m_intakeOscillationTimer.isRunning()) {
-								m_intakeOscillationTimer.start();
-							}
-						} else if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
-								&& !canFire.getAsBoolean()) {
-							m_intake.stopIntakeArm();
-							m_intakeOscillationTimer.stop();
-							m_intakeOscillationTimer.reset();
-						}
-					}))
-					.onlyWhile(() -> m_isObjectiveOriented)
-					.finallyDo(() -> {
-						DriveCommands.LatestShootingAngularVelocity = 0;
-						m_rollers.stop();
-						m_hood.stop();
-						stopFeeding();
-						m_actionState = ActionState.kActionIdle;
-						m_intakeOscillationTimer.stop();
-						m_intakeOscillationTimer.reset();
-					});
-
-		return Commands.run(() -> {
+		if (Robot.kRobotMode == RobotMode.kSim) return Commands.run(() -> {
 			// Continuously update shooter setpoints
 			updateShooterSetpointState(target.get());
-			if (m_latestParameters != null && m_latestParameters.isValid()) {
-				if (!overrideRollerSetpointChooser.get())
-					m_rollers.setRollerVelocity(m_latestParameters.rollerSpeedsRPM());
-				if (!overrideHoodSetpointChooser.get())
-					m_hood.setHoodAngle(kExitAngleOffset - m_latestParameters.hoodAngleDegs());
+			if (m_latestParameters != null && m_latestParameters.isValid()
+					&& (!DriverStation.isTest() || !overrideRollerSetpointChooser.get())) {
+				m_rollers.setRollerVelocity(m_latestParameters.rollerSpeedsRPM());
 			}
 
 			// Update commanded shot angular velocity
@@ -696,45 +594,115 @@ public class Superstructure extends SubsystemBase {
 					m_swerve.getRobotRotation().getRadians(),
 					getLatestShooterParameters().turretAngleField().getRadians() - Math.toRadians(kHoodCalibrationYaw));
 
-			// Shoot if possible by enabling the feeder
-			if (canFire.getAsBoolean())
-				startFeeding();
+			// Feed only if the shot is possible
+			if (canFire.getAsBoolean()) startFeeding();
+
+			// Spawn projectile if there are game pieces in the hopper
+			if (canFire.getAsBoolean() && Timer.getFPGATimestamp() - m_lastFuelShotSim >= kAverageShotTime
+					&& m_intakeSim.getGamePiecesAmount() > 0) {
+				// Make sure to use current state values, and not the ideal values
+				var currState = shooterCalculator.computeCurrentExitParameters(m_latestParameters, kStaticShotAngle,
+						kHoodCalibrationYaw, m_rollers.getVelocity(),
+						new Pose3d(RobotContainer.getInstance().swerveSim.getSimulatedDriveTrainPose()),
+						RobotContainer.getInstance().swerveSim.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
+						kFuelProjectile);
+				m_lastFuelShotSim = Timer.getFPGATimestamp();
+				m_projectiles.add(new ShooterProjectile(kFuelProjectile, currState.exitVelocityVec3(),
+						new Pose3d(currState.exitPose(), Rotation3d.kZero)));
+				m_intakeSim.obtainGamePieceFromIntake();
+			}
 		})
 				// Stop feeder when unable to fire
-				.alongWith(Commands.run(() -> {
-					if (!canFire.getAsBoolean())
-						stopFeeding();
-				}))
-				.alongWith(Commands.run(() -> {
+				.alongWith(Commands.run(() -> { if (!canFire.getAsBoolean()) stopFeeding(); }))
+				.alongWith(Commands.waitSeconds(kIntakeOscillateStartDelay).andThen(Commands.run(() -> {
 					// Oscillate intake
 					if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
 							&& canFire.getAsBoolean()) {
+						if (m_intake.getLatestArmSetpoint() == kArmClosedAngle) {
+							m_intake.openIntake();
+							m_intakeOscillationTimer.restart();
+						}
 						if (m_intake.getLatestArmSetpoint() == kArmPushFuelAngle && (m_intake.isArmNearSetpoint()
 								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
 							m_intake.openIntake();
 							m_intakeOscillationTimer.restart();
 						} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle && (m_intake.isArmNearSetpoint()
 								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
-							m_intake.intakePushAngle();
-							m_intakeOscillationTimer.restart();
-						} else if (m_intake.getLatestArmSetpoint() != kArmOpenedAngle
-								&& m_intake.getLatestArmSetpoint() != kArmPushFuelAngle) {
-							m_intake.openIntake();
-						} else if (!m_intakeOscillationTimer.isRunning()) {
-							m_intakeOscillationTimer.start();
-						}
+									m_intake.intakePushAngle();
+									m_intakeOscillationTimer.restart();
+								} else
+							if (m_intake.getLatestArmSetpoint() != kArmOpenedAngle
+									&& m_intake.getLatestArmSetpoint() != kArmPushFuelAngle) {
+										m_intake.openIntake();
+									} else
+								if (!m_intakeOscillationTimer.isRunning()) { m_intakeOscillationTimer.start(); }
 					} else if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
 							&& !canFire.getAsBoolean()) {
-						m_intake.stopIntakeArm();
-						m_intakeOscillationTimer.stop();
-						m_intakeOscillationTimer.reset();
-					}
+								m_intake.stopIntakeArm();
+								m_intakeOscillationTimer.stop();
+								m_intakeOscillationTimer.reset();
+							}
+				})))
+				.onlyWhile(() -> m_isObjectiveOriented)
+				.finallyDo(() -> {
+					DriveCommands.LatestShootingAngularVelocity = 0;
+					m_rollers.stop();
+					stopFeeding();
+					m_actionState = ActionState.kActionIdle;
+					m_intakeOscillationTimer.stop();
+					m_intakeOscillationTimer.reset();
+				});
+
+		return Commands.run(() -> {
+			// Continuously update shooter setpoints
+			updateShooterSetpointState(target.get());
+			if (m_latestParameters != null && m_latestParameters.isValid() && !overrideRollerSetpointChooser.get()) {
+				m_rollers.setRollerVelocity(m_latestParameters.rollerSpeedsRPM());
+			}
+
+			// Update commanded shot angular velocity
+			DriveCommands.LatestShootingAngularVelocity = m_swerve.ArbitraryPIDAngular.calculate(
+					m_swerve.getRobotRotation().getRadians(),
+					getLatestShooterParameters().turretAngleField().getRadians());
+
+			// Shoot if possible by enabling the feeder
+			if (canFire.getAsBoolean()) startFeeding();
+		})
+				// Stop feeder when unable to fire
+				.alongWith(Commands.run(() -> { if (!canFire.getAsBoolean()) stopFeeding(); }))
+				.alongWith(Commands.run(() -> {
+					// Oscillate intake
+					if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
+							&& canFire.getAsBoolean()) {
+						if (m_intake.getLatestArmSetpoint() == kArmClosedAngle) {
+							m_intake.openIntake();
+							m_intakeOscillationTimer.restart();
+						}
+						if (m_intake.getLatestArmSetpoint() == kArmPushFuelAngle && (m_intake.isArmNearSetpoint()
+								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
+							m_intake.openIntake();
+							m_intakeOscillationTimer.restart();
+						} else if (m_intake.getLatestArmSetpoint() == kArmOpenedAngle && (m_intake.isArmNearSetpoint()
+								|| m_intakeOscillationTimer.hasElapsed(kMaxOscillationTime))) {
+									m_intake.intakePushAngle();
+									m_intakeOscillationTimer.restart();
+								} else
+							if (m_intake.getLatestArmSetpoint() != kArmOpenedAngle
+									&& m_intake.getLatestArmSetpoint() != kArmPushFuelAngle) {
+										m_intake.openIntake();
+									} else
+								if (!m_intakeOscillationTimer.isRunning()) { m_intakeOscillationTimer.start(); }
+					} else if (m_primaryState != PrimaryState.kIntaking && m_primaryState != PrimaryState.kOuttaking
+							&& !canFire.getAsBoolean()) {
+								m_intake.stopIntakeArm();
+								m_intakeOscillationTimer.stop();
+								m_intakeOscillationTimer.reset();
+							}
 				}))
 				.onlyWhile(() -> m_isObjectiveOriented)
 				.finallyDo(() -> {
 					DriveCommands.LatestShootingAngularVelocity = 0;
 					m_rollers.stop();
-					m_hood.stop();
 					stopFeeding();
 					m_intakeOscillationTimer.stop();
 					m_intakeOscillationTimer.reset();
@@ -748,7 +716,7 @@ public class Superstructure extends SubsystemBase {
 		m_lastShooterUpdate = Timer.getFPGATimestamp();
 		if (!isFallbackScoring()) {
 			var hubPose = new Pose3d(target, Rotation3d.kZero);
-			m_latestParameters = m_shooterCalculator.updateParameters(hubPose.getTranslation(),
+			m_latestParameters = shooterCalculator.updateParameters(hubPose.getTranslation(),
 					new Pose3d(m_swerve.getFilteredPose()), m_swerve.getRobotRotation(),
 					m_swerve.getChassisSpeedsFieldRelative(), kFuelProjectile);
 		} else {
@@ -758,7 +726,7 @@ public class Superstructure extends SubsystemBase {
 	}
 
 	/** Returns the alliance's hub location. */
-	private Translation3d getAllianceHubLocation() {
+	public Translation3d getAllianceHubLocation() {
 		return AllianceUtil.flipWithAlliance(FieldConstants.kBlueHubCenterPose);
 	}
 
@@ -780,7 +748,7 @@ public class Superstructure extends SubsystemBase {
 		OptimizedLine opt = LineTrajectoryUtils.optimizeUntilNoIntersect(m_swerve.getFilteredPose()
 				.transformBy(new Transform2d(kHoodCentralPivotRobotRelative.getTranslation().toTranslation2d(),
 						Rotation2d.kZero))
-				.getTranslation(), List.of(netLine), passLine, kPassTrajOptSteps, kPassFuelAcceptDistance);
+				.getTranslation(), List.of(netLine), passLine, kPassTrajOptSteps, 0);
 		Tracer.finish("OptimizePassTrajectory");
 		m_latestPassLineOpt = opt;
 
@@ -789,8 +757,7 @@ public class Superstructure extends SubsystemBase {
 
 	/** Flips the shooter parameters based on alliance. */
 	private ShooterParameters flipParametersAlliance(ShooterParameters blueRelativeParams) {
-		if (!AllianceUtil.isRedAlliance())
-			return blueRelativeParams;
+		if (!AllianceUtil.isRedAlliance()) return blueRelativeParams;
 
 		return new ShooterParameters(blueRelativeParams.isValid(),
 				blueRelativeParams.turretAngleField().plus(Rotation2d.kPi), blueRelativeParams.turretAngleRobot(),

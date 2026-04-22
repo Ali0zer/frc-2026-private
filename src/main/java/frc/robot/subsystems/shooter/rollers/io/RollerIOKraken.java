@@ -1,8 +1,12 @@
 package frc.robot.subsystems.shooter.rollers.io;
 
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kD;
-import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotorID;
-import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerOpposesMain;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollower1OpposesMain;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollower2OpposesMain;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollower3OpposesMain;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotor1ID;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotor2ID;
+import static frc.robot.subsystems.shooter.rollers.RollerConstants.kFollowerMotor3ID;
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kGearboxReduction;
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kIsFOC;
 import static frc.robot.subsystems.shooter.rollers.RollerConstants.kMainMotorID;
@@ -40,10 +44,14 @@ import edu.wpi.first.units.measure.Voltage;
  */
 public class RollerIOKraken implements RollerIO {
 	private TalonFX m_mainTalon;
-	private TalonFX m_followerTalon;
+	private TalonFX m_followerTalon1;
+	private TalonFX m_followerTalon2;
+	private TalonFX m_followerTalon3;
 
 	private Debouncer m_mainMotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
-	private Debouncer m_followerMotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
+	private Debouncer m_follower1MotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
+	private Debouncer m_follower2MotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
+	private Debouncer m_follower3MotorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
 
 	// Control objects
 	private VelocityVoltage m_rpmOut = new VelocityVoltage(0).withEnableFOC(kIsFOC).withSlot(0);
@@ -55,18 +63,17 @@ public class RollerIOKraken implements RollerIO {
 	private StatusSignal<Current> m_supplySignal, m_statorSignal;
 	private StatusSignal<Temperature> m_tempSignal;
 
-	private StatusSignal<Voltage> m_voltsSignalFollower;
-	private StatusSignal<AngularVelocity> m_rpmSignalFollower;
-	private StatusSignal<Angle> m_positionSignalFollower;
-	private StatusSignal<Current> m_supplySignalFollower, m_statorSignalFollower;
-	private StatusSignal<Temperature> m_tempSignalFollower;
+	private StatusSignal<Current> m_supplySignalFollower1, m_supplySignalFollower2, m_supplySignalFollower3;
+	private StatusSignal<Temperature> m_tempSignalFollower1, m_tempSignalFollower2, m_tempSignalFollower3;
 
 	/**
 	 * Constructs a new RollerIOKraken.
 	 */
 	public RollerIOKraken() {
 		m_mainTalon = new TalonFX(kMainMotorID, new CANBus(kMotorCANBus));
-		m_followerTalon = new TalonFX(kFollowerMotorID, new CANBus(kMotorCANBus));
+		m_followerTalon1 = new TalonFX(kFollowerMotor1ID, new CANBus(kMotorCANBus));
+		m_followerTalon1 = new TalonFX(kFollowerMotor2ID, new CANBus(kMotorCANBus));
+		m_followerTalon1 = new TalonFX(kFollowerMotor3ID, new CANBus(kMotorCANBus));
 
 		// Configure motors
 		TalonFXConfiguration motorConfig = new TalonFXConfiguration();
@@ -86,11 +93,21 @@ public class RollerIOKraken implements RollerIO {
 		TalonUtils.retryUntilOk(() -> m_mainTalon.getConfigurator().apply(motorConfig), 3,
 				"Applying configuration to main roller motor");
 
-		TalonUtils.retryUntilOk(() -> m_followerTalon.getConfigurator().apply(motorConfig), 3,
-				"Applying configuration to follower roller motor");
+		TalonUtils.retryUntilOk(() -> m_followerTalon1.getConfigurator().apply(motorConfig), 3,
+				"Applying configuration to follower roller motor #1");
 
-		m_followerTalon.setControl(new Follower(kMainMotorID,
-				kFollowerOpposesMain ? MotorAlignmentValue.Opposed : MotorAlignmentValue.Aligned));
+		TalonUtils.retryUntilOk(() -> m_followerTalon1.getConfigurator().apply(motorConfig), 3,
+				"Applying configuration to follower roller motor #2");
+
+		TalonUtils.retryUntilOk(() -> m_followerTalon1.getConfigurator().apply(motorConfig), 3,
+				"Applying configuration to follower roller motor #3");
+
+		m_followerTalon1.setControl(new Follower(kMainMotorID,
+				kFollower1OpposesMain ? MotorAlignmentValue.Opposed : MotorAlignmentValue.Aligned));
+		m_followerTalon2.setControl(new Follower(kMainMotorID,
+				kFollower2OpposesMain ? MotorAlignmentValue.Opposed : MotorAlignmentValue.Aligned));
+		m_followerTalon3.setControl(new Follower(kMainMotorID,
+				kFollower3OpposesMain ? MotorAlignmentValue.Opposed : MotorAlignmentValue.Aligned));
 
 		// Status signals
 		m_voltsSignal = m_mainTalon.getMotorVoltage();
@@ -100,18 +117,18 @@ public class RollerIOKraken implements RollerIO {
 		m_statorSignal = m_mainTalon.getStatorCurrent();
 		m_tempSignal = m_mainTalon.getDeviceTemp();
 
-		m_voltsSignalFollower = m_followerTalon.getMotorVoltage();
-		m_rpmSignalFollower = m_followerTalon.getVelocity();
-		m_positionSignalFollower = m_followerTalon.getPosition();
-		m_supplySignalFollower = m_followerTalon.getSupplyCurrent();
-		m_statorSignalFollower = m_followerTalon.getStatorCurrent();
-		m_tempSignalFollower = m_followerTalon.getDeviceTemp();
+		m_supplySignalFollower1 = m_followerTalon1.getSupplyCurrent();
+		m_tempSignalFollower1 = m_followerTalon1.getDeviceTemp();
+		m_supplySignalFollower2 = m_followerTalon2.getSupplyCurrent();
+		m_tempSignalFollower2 = m_followerTalon2.getDeviceTemp();
+		m_supplySignalFollower3 = m_followerTalon3.getSupplyCurrent();
+		m_tempSignalFollower3 = m_followerTalon3.getDeviceTemp();
 
 		BaseStatusSignal.setUpdateFrequencyForAll(100, m_voltsSignal, m_rpmSignal, m_positionSignal, m_supplySignal,
-				m_statorSignal, m_tempSignal, m_voltsSignalFollower, m_rpmSignalFollower, m_positionSignalFollower,
-				m_supplySignalFollower, m_statorSignalFollower, m_tempSignalFollower);
+				m_statorSignal, m_tempSignal, m_supplySignalFollower1, m_supplySignalFollower2, m_supplySignalFollower3,
+				m_tempSignalFollower1, m_tempSignalFollower2, m_tempSignalFollower3);
 
-		ParentDevice.optimizeBusUtilizationForAll(m_mainTalon, m_followerTalon);
+		ParentDevice.optimizeBusUtilizationForAll(m_mainTalon, m_followerTalon1, m_followerTalon2, m_followerTalon3);
 	}
 
 	@Override
@@ -126,17 +143,20 @@ public class RollerIOKraken implements RollerIO {
 		inputs.statorCurrentAmpsMain = Math.abs(m_statorSignal.getValueAsDouble());
 		inputs.temperatureCelsiusMain = m_tempSignal.getValueAsDouble();
 
-		inputs.followerMotorConnected = m_followerMotorConnectedDebouncer.calculate(
-				BaseStatusSignal
-						.refreshAll(m_voltsSignalFollower, m_rpmSignalFollower, m_supplySignalFollower,
-								m_statorSignalFollower, m_tempSignalFollower)
-						.isOK());
-		inputs.appliedVoltageFollower = m_voltsSignalFollower.getValueAsDouble();
-		inputs.rpmFollower = m_rpmSignalFollower.getValueAsDouble() * 60.0;
-		inputs.positionRevsFollower = m_positionSignalFollower.getValueAsDouble();
-		inputs.supplyCurrentAmpsFollower = Math.abs(m_supplySignalFollower.getValueAsDouble());
-		inputs.statorCurrentAmpsFollower = Math.abs(m_statorSignalFollower.getValueAsDouble());
-		inputs.temperatureCelsiusFollower = m_tempSignalFollower.getValueAsDouble();
+		inputs.follower1MotorConnected = m_follower1MotorConnectedDebouncer
+				.calculate(BaseStatusSignal.refreshAll(m_supplySignalFollower1, m_tempSignalFollower1).isOK());
+		inputs.supplyCurrentAmpsFollower1 = Math.abs(m_supplySignalFollower1.getValueAsDouble());
+		inputs.temperatureCelsiusFollower1 = m_tempSignalFollower1.getValueAsDouble();
+
+		inputs.follower2MotorConnected = m_follower2MotorConnectedDebouncer
+				.calculate(BaseStatusSignal.refreshAll(m_supplySignalFollower2, m_tempSignalFollower2).isOK());
+		inputs.supplyCurrentAmpsFollower2 = Math.abs(m_supplySignalFollower2.getValueAsDouble());
+		inputs.temperatureCelsiusFollower2 = m_tempSignalFollower2.getValueAsDouble();
+
+		inputs.follower3MotorConnected = m_follower3MotorConnectedDebouncer
+				.calculate(BaseStatusSignal.refreshAll(m_supplySignalFollower3, m_tempSignalFollower3).isOK());
+		inputs.supplyCurrentAmpsFollower3 = Math.abs(m_supplySignalFollower3.getValueAsDouble());
+		inputs.temperatureCelsiusFollower3 = m_tempSignalFollower3.getValueAsDouble();
 	}
 
 	@Override

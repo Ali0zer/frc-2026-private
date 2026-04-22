@@ -118,8 +118,7 @@ public final class SwerveConstants {
 		// Ideally should be in the range -0.15 to 0.15, start tuning with 0.1
 		// * If skew gets worse, negate the value
 		// * If the skew changes direction while rotating in the same direction, make
-		// the value closer
-		// to 0
+		// the value closer to 0
 		// * For precision, use the identification command
 		public static final double kSkewCorrectionFactor = 0.04671;
 
@@ -165,17 +164,17 @@ public final class SwerveConstants {
 		public static final double kPathDriveP = 4;
 		public static final double kPathDriveD = 0;
 
-		public static final double kPathTurnP = 13;
+		public static final double kPathTurnP = 10;
 		public static final double kPathTurnD = 0;
 
 		public static final double kPathDrivePSim = 4;
 		public static final double kPathDriveDSim = 0;
 
-		public static final double kPathTurnPSim = 14;
-		public static final double kPathTurnDSim = 0.02;
+		public static final double kPathTurnPSim = 9.5;
+		public static final double kPathTurnDSim = 0;
 
-		public static final PathConstraints kPathConstraints = new PathConstraints(4.45, 5, Math.toRadians(720),
-				Math.toRadians(1400));
+		public static final PathConstraints kPathConstraints = new PathConstraints(4.45, 5, Math.toRadians(720 * 2.0),
+				Math.toRadians(1400 * 2.0));
 		public static final PathConstraints kPathConstraintsScoring = new PathConstraints(1.5, 3,
 				Math.toRadians(9999999), Math.toRadians(9999999));
 
@@ -217,13 +216,13 @@ public final class SwerveConstants {
 		// Units:
 		// Drive: V / (m/s)
 		// Turn: V / (rad/s)
-		public static final double kDriveP = 0.94/* 0.04 */, kDriveD = 0;
+		public static final double kDriveP = 1.5/* 0.04 */, kDriveD = 0;
 		public static final double kTurnP = 10, kTurnD = 0;
 
 		public static final double kDrivePSim = 10, kDriveDSim = 0;
 		public static final double kTurnPSim = 10, kTurnDSim = 0;
 
-		public static final double kDriveKs = 0.02, kDriveKv = 1.220472;
+		public static final double kDriveKs = 0.025, kDriveKv = 2.55804;
 		public static final double kDriveKsSim = 0.03457, kDriveKvSim = 2.55804;
 
 		public static final boolean kInvertRightDriveMotor = true;

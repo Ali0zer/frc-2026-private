@@ -1,7 +1,13 @@
 package frc.robot.commands.drive;
 
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kHubRadialKp;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kHubShootRadius;
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.kHubVelocityAmpl;
+import static frc.robot.subsystems.swerve.SwerveConstants.DriveConstants.kMaxSpeedMetersPerSecond;
+
 import com.bobcats.lib.container.Container;
 import com.bobcats.lib.container.IntegerContainer;
+import com.bobcats.lib.control.ArcTrajectoryLock;
 import com.bobcats.lib.subsystem.vision.LibVisionSubsystem;
 import com.bobcats.lib.utils.PoseUtils;
 import com.bobcats.lib.utils.VisionCalibration;
@@ -23,6 +29,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.RobotContainer;
+import frc.robot.constants.FieldConstants;
 import frc.robot.constants.OIConstants;
 import frc.robot.subsystems.superstructure.Superstructure.ActionState;
 import frc.robot.subsystems.swerve.SwerveConstants.DriveConstants;
@@ -36,6 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
+import org.littletonrobotics.junction.Logger;
 
 //
 // First few methods' credits go to Team 6328.
@@ -67,6 +75,11 @@ public class DriveCommands {
 	private static final int kWheelCOFMaxPitchBufferSize = 100; // About 2 seconds
 
 	public static double LatestShootingAngularVelocity = 0;
+	public static Translation2d LatestArcPoint = Translation2d.kZero;
+
+	private static final ArcTrajectoryLock m_shotArc = new ArcTrajectoryLock(
+			FieldConstants.kBlueHubCenterPose.toTranslation2d(), kHubShootRadius, kHubRadialKp, kHubVelocityAmpl,
+			Rotation2d.fromDegrees(-230), Rotation2d.fromDegrees(-110)).withAutoFlipTarget(true);
 
 	/** No constructor for static utilities. */
 	private DriveCommands() {}
@@ -132,13 +145,30 @@ public class DriveCommands {
 			double omegaOut = isObjective ? LatestShootingAngularVelocity : omega * DriveConstants.kMaxAngularSpeed;
 
 			// Convert to field relative speeds & send command
-			ChassisSpeeds speeds = new ChassisSpeeds(linearVelocity.getX() * DriveConstants.kMaxSpeedMetersPerSecond,
-					linearVelocity.getY() * DriveConstants.kMaxSpeedMetersPerSecond, omegaOut);
 			boolean isFlipped = DriverStation.getAlliance().isPresent()
 					&& DriverStation.getAlliance().get() == Alliance.Blue;
+			double flipSign = (isFlipped ? -1 : 1);
+			ChassisSpeeds speeds = new ChassisSpeeds(
+					flipSign * linearVelocity.getX() * DriveConstants.kMaxSpeedMetersPerSecond,
+					flipSign * linearVelocity.getY() * DriveConstants.kMaxSpeedMetersPerSecond, omegaOut);
 
-			speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds,
-					isFlipped ? drive.getRobotRotation().plus(new Rotation2d(Math.PI)) : drive.getRobotRotation());
+			// Stay on valid shooting arc when shooting
+			if (RobotContainer.getInstance().superstructure.isObjectiveOriented()
+					&& RobotContainer.getInstance().superstructure.getActionState() == ActionState.kScoreFuelHub) {
+				speeds = m_shotArc.getCorrectedTrajectorySpeeds(drive.getFilteredPose(), speeds,
+						kMaxSpeedMetersPerSecond);
+				var point = m_shotArc.getClosestValidArcPoint(drive.getFilteredPose());
+				Logger.recordOutput("ClosestArcPoint", point);
+				LatestArcPoint = point.getTranslation();
+			}
+
+			// Limit velocity when shooting
+			speeds = RobotContainer.getInstance().superstructure.desaturateShootingSpeeds(speeds);
+
+			// speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds,
+			// isFlipped ? drive.getRobotRotation().plus(new Rotation2d(Math.PI)) :
+			// drive.getRobotRotation());
+			speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, drive.getRobotRotation());
 
 			drive.runSpeeds(speeds, false);
 		}, drive);
@@ -232,7 +262,8 @@ public class DriveCommands {
 					double commandedOmega = MathUtil.clamp(t * kSkewAngularRampRate, -kSkewMaxAngularSpeed,
 							kSkewMaxAngularSpeed);
 
-					// commanded robot-relative chassis speeds: forward x, zero lateral, commanded omega
+					// commanded robot-relative chassis speeds: forward x, zero lateral, commanded
+					// omega
 					ChassisSpeeds commanded = new ChassisSpeeds(kSkewTargetLinearSpeed, // vx
 							0.0, // vy
 							commandedOmega // omega

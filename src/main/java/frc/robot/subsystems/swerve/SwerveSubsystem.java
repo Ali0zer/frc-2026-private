@@ -43,7 +43,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.RobotContainer;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.swerve.SwerveConstants.AutoConstants;
 import frc.robot.subsystems.swerve.SwerveConstants.DriveConstants;
@@ -316,13 +315,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
 		speeds = correctSkew(speeds);
 		speeds = ChassisSpeeds.discretize(speeds, Constants.kLoopPeriodSeconds);
-
-		// Limit speeds when shooting
-		double limitSpeed = RobotContainer.getInstance().superstructure.getChassisLimitVelocity();
-		double speed = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
-		if (speed > limitSpeed && !DriverStation.isAutonomous())
-			speeds = new ChassisSpeeds(speeds.vxMetersPerSecond * limitSpeed / speed,
-					speeds.vyMetersPerSecond * limitSpeed / speed, speeds.omegaRadiansPerSecond);
 
 		var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds);
 		SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, kMaxSpeedMetersPerSecond);

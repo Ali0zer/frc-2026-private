@@ -17,13 +17,17 @@ public interface RollerIO {
 		public double statorCurrentAmpsMain = 0.0;
 		public double temperatureCelsiusMain = 0.0;
 
-		public boolean followerMotorConnected = true;
-		public double appliedVoltageFollower = 0.0;
-		public double rpmFollower = 0.0;
-		public double positionRevsFollower = 0.0;
-		public double supplyCurrentAmpsFollower = 0.0;
-		public double statorCurrentAmpsFollower = 0.0;
-		public double temperatureCelsiusFollower = 0.0;
+		public boolean follower1MotorConnected = true;
+		public double supplyCurrentAmpsFollower1 = 0.0;
+		public double temperatureCelsiusFollower1 = 0.0;
+
+		public boolean follower2MotorConnected = true;
+		public double supplyCurrentAmpsFollower2 = 0.0;
+		public double temperatureCelsiusFollower2 = 0.0;
+
+		public boolean follower3MotorConnected = true;
+		public double supplyCurrentAmpsFollower3 = 0.0;
+		public double temperatureCelsiusFollower3 = 0.0;
 	}
 
 	/**

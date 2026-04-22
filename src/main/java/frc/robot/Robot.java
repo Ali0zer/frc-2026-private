@@ -5,9 +5,6 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Amps;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kExitAngleOffset;
-import static frc.robot.subsystems.shooter.hood.HoodConstants.kHoodCalibrationAngle;
-import static frc.robot.subsystems.superstructure.SuperstructureConstants.kMechanismMovementControllerRumbleStrength;
 
 import com.bobcats.lib.container.LoggedTunableNumber;
 import com.bobcats.lib.sim.HardwareSimUtils;
@@ -145,7 +142,6 @@ public class Robot extends LoggedRobot {
 		m_scheduleLogger = Utils.registerLoopTimeLogger(this);
 
 		// Default overrides
-		SmartDashboard.putNumber("HoodOverrideAngle", kHoodCalibrationAngle);
 		SmartDashboard.putNumber("RollerOverrideRPM", 0);
 	}
 
@@ -189,11 +185,6 @@ public class Robot extends LoggedRobot {
 		Logger.recordOutput("MainBusStatus/txFullCount", canStatus.txFullCount);
 
 		m_scheduleLogger.run();
-
-		// Controller rumble
-		if (!DriverStation.isDisabled() && !m_robotContainer.superstructure.areRumbleMechanismsAtSetpoints())
-			m_robotContainer.setControllerRumble(kMechanismMovementControllerRumbleStrength);
-		else m_robotContainer.setControllerRumble(0);
 
 		m_robotContainer.updateAlerts();
 
@@ -244,8 +235,7 @@ public class Robot extends LoggedRobot {
 		// Cancel all commands at start of test mode
 		CommandScheduler.getInstance().cancelAll();
 
-		if (!m_robotContainer.superstructure.overrideHoodSetpointChooser.get()
-				&& !m_robotContainer.superstructure.overrideRollerSetpointChooser.get())
+		if (!m_robotContainer.superstructure.overrideRollerSetpointChooser.get())
 			// Assign and schedule the test command
 			CommandScheduler.getInstance().schedule(m_testCommand = m_robotContainer.getTestCommand());
 	}
@@ -253,10 +243,6 @@ public class Robot extends LoggedRobot {
 	@Override
 	public void testPeriodic() {
 		// Calibration/override mode
-		if (m_robotContainer.superstructure.overrideHoodSetpointChooser.get())
-			m_robotContainer.hood.setHoodAngle(kExitAngleOffset - SmartDashboard.getNumber("HoodOverrideAngle", 0));
-		else m_robotContainer.hood.stop();
-
 		if (m_robotContainer.superstructure.overrideRollerSetpointChooser.get())
 			m_robotContainer.rollers.setRollerVelocity(SmartDashboard.getNumber("RollerOverrideRPM", 0));
 		else m_robotContainer.rollers.stop();

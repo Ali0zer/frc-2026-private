@@ -41,8 +41,12 @@ public class FieldConstants {
 
 	// Welded
 	public static final Pose2d kRobotPoseMiddleBlue = new Pose2d(3.507, 4.082, Rotation2d.kPi);
-	public static final Pose2d kRobotPoseRightBlue = new Pose2d(3.589, 2.511, Rotation2d.kPi);
-	public static final Pose2d kRobotPoseLeftBlue = new Pose2d(3.589, 5.558, Rotation2d.kPi);
+	public static final Pose2d kRobotPoseRightBumpBlue = new Pose2d(3.589, 2.511, Rotation2d.kPi);
+	public static final Pose2d kRobotPoseLeftBumpBlue = new Pose2d(3.589, 5.558, Rotation2d.kPi);
+
+	// Robot's bumper is barely on the start line
+	public static final Pose2d kRobotPoseRightTrenchBlue = new Pose2d(4.407, 0.611, Rotation2d.kPi);
+	public static final Pose2d kRobotPoseLeftTrenchBlue = new Pose2d(4.407, 7.458326, Rotation2d.kPi);
 
 	// Welded
 	// Adding 5x ball diameter on each side to avoid any intersect
