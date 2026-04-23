@@ -7,7 +7,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class IntakeConstants {
 	// Motor IDs
-	public static final int kRollerMotorID = 25;
+	public static final int kRollerMotorID = 27;
 	public static final String kRollerMotorCANBus = ""; // Main RIO bus
 	public static final int kArmMotorID = 26;
 	public static final String kArmMotorCANBus = "";
@@ -33,14 +33,15 @@ public class IntakeConstants {
 
 	// TODO exact values
 	// Gearbox reduction
-	public static final double kRollerGearboxReduction = 20.0 / 12.0; // A 1:1 ratio
-	public static final double kArmGearboxReduction = 75; // A 75:1 ratio
+	public static final double kRollerGearboxReduction = 1; // A 1:1 ratio
+	public static final double kArmGearboxReduction = 1; // A 75:1 ratio
 
 	// Current limits for the motor
 	public static final double kRollerMotorSupplyLimitAmps = 20.0;
 	public static final double kRollerMotorStatorLimitAmps = 50.0;
 
 	public static final double kArmMotorSupplyLimitAmps = 30.0;
+
 	public static final double kArmMotorStatorLimitAmps = 60.0;
 
 	// Inversions
