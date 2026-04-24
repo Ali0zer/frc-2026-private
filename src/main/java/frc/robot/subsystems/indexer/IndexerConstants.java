@@ -7,7 +7,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class IndexerConstants {
 	// Motor IDs
-	public static final int kMotorID = 50;
+	public static final int kMotorID = 29;
 	public static final String kMotorCANBus = "";
 
 	// Control parameters
@@ -15,7 +15,7 @@ public class IndexerConstants {
 	public static final double kReverseVoltage = -3.5;
 
 	// Gearbox reduction
-	public static final double kGearboxReduction = 1; // TODO
+	public static final double kGearboxReduction = 18.0/12.0.; // TODO
 
 	// Current limit for the motor
 	public static final double kMotorSupplyLimitAmps = 30;
@@ -24,7 +24,7 @@ public class IndexerConstants {
 	public static final boolean kIsFOC = false;
 
 	// Inversions
-	public static final boolean kMotorInverted = false;
+	public static final boolean kMotorInverted = true;
 
 	// Simulation data
 	public static final DCMotor kGearbox = DCMotor.getNEO(1);
