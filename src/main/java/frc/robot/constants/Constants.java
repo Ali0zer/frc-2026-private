@@ -29,7 +29,7 @@ public final class Constants {
 	/** Class holding the physical parameters of the robot. */
 	public static final class PhysicalParameters {
 		// Robot measurements
-		public static final Distance kRobotLength = Centimeters.of(82), kRobotWidth = Centimeters.of(87);
+		public static final Distance kRobotLength = Centimeters.of(67.5), kRobotWidth = Centimeters.of(71.5);
 		public static final Mass kRobotMass = Kilograms.of(55);
 		public static final double kWheelCOF = 1.426;
 
