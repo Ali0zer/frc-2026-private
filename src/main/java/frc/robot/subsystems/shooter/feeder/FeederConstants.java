@@ -7,7 +7,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class FeederConstants {
 	// Motor IDs
-	public static final int kMotorID = 50;
+	public static final int kMotorID = 21;
 	public static final String kMotorCANBus = "";
 
 	// Control parameters
@@ -16,7 +16,7 @@ public class FeederConstants {
 	public static final double kUnfeedVoltage = -3.5;
 
 	// Gearbox reduction
-	public static final double kGearboxReduction = 0.75; // A 3:4 ratio (I/O)
+	public static final double kGearboxReduction = 18/12; // A 3:4 ratio (I/O)
 
 	// Current limit for the motor
 	public static final double kMotorSupplyLimitAmps = 30;
