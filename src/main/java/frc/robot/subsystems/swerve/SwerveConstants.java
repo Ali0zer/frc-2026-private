@@ -72,9 +72,9 @@ public final class SwerveConstants {
 
 		// Chassis configuration
 		// Distance between the centers of the right and left wheels on robot
-		public static final double kTrackWidth = 0.578374234; // meters
+		public static final double kTrackWidth = 0.54165; // meters
 		// Distance between the centers of the front and back wheels on robot
-		public static final double kWheelBase = 0.542484624; // meters
+		public static final double kWheelBase = 0.5766562; // meters
 		// Instantiate the kinematics
 		public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
 				new Translation2d(kWheelBase / 2, kTrackWidth / 2), new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
@@ -91,22 +91,22 @@ public final class SwerveConstants {
 		// }
 
 		// Motor IDs
-		public static final int kFrontLeftDrivingCanId = 11;
-		public static final int kRearLeftDrivingCanId = 31;
-		public static final int kFrontRightDrivingCanId = 21;
-		public static final int kRearRightDrivingCanId = 41;
+		public static final int kFrontLeftDrivingCanId = 10;
+		public static final int kRearLeftDrivingCanId = 14;
+		public static final int kFrontRightDrivingCanId = 16;
+		public static final int kRearRightDrivingCanId = 12;
 
-		public static final int kFrontLeftTurningCanId = 12;
-		public static final int kRearLeftTurningCanId = 32;
-		public static final int kFrontRightTurningCanId = 22;
-		public static final int kRearRightTurningCanId = 42;
+		public static final int kFrontLeftTurningCanId = 11;
+		public static final int kRearLeftTurningCanId = 15;
+		public static final int kFrontRightTurningCanId = 17;
+		public static final int kRearRightTurningCanId = 13;
 
-		public static final int kFrontLeftCANCoderId = 13;
-		public static final int kRearLeftCANCoderId = 33;
-		public static final int kFrontRightCANCoderId = 23;
-		public static final int kRearRightCANCoderId = 43;
+		public static final int kFrontLeftCANCoderId = 30;
+		public static final int kRearLeftCANCoderId = 32;
+		public static final int kFrontRightCANCoderId =34;
+		public static final int kRearRightCANCoderId = 31;
 
-		public static final int kPigeon2CanId = 1;
+		public static final int kPigeon2CanId = 35;
 
 		// Whether to enable cosine compensation for the real robot and simulation
 		public static final boolean kCosineCompensateReal = true;
@@ -237,8 +237,8 @@ public final class SwerveConstants {
 		// "It’s extremely important for the modules to be aligned such that the bevel
 		// gear faces the vertical center of the robot. Failure to perform this step may
 		// lead the drive verification tests to fail."
-		public static final double kFrontLeftEncoderOffset = -0.33935546875, kFrontRightEncoderOffset = -0.4892578125,
-				kRearLeftEncoderOffset = 0.142333984375, kRearRightEncoderOffset = -0.03515625;
+		public static final double kFrontLeftEncoderOffset = -0.031494, kFrontRightEncoderOffset = 0.136230,
+				kRearLeftEncoderOffset =-0.4853525, kRearRightEncoderOffset = -0.339111;
 		public static final boolean kInvertEncoders = false;
 
 		// TODO Change after Phoenix pro
