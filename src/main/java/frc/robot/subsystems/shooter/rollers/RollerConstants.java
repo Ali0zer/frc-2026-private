@@ -39,7 +39,7 @@ public class RollerConstants {
 
 	// Inversions
 	public static final boolean kMotorInverted = true;
-	public static final boolean kFollower1OpposesMain = false;
+	public static final boolean kFollower1OpposesMain = true;
 	public static final boolean kFollower2OpposesMain = false;
 	public static final boolean kFollower3OpposesMain = false;
 
