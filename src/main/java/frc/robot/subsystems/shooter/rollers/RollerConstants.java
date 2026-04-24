@@ -9,10 +9,10 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public class RollerConstants {
 	// Motor IDs
-	public static final int kMainMotorID = 53;
-	public static final int kFollowerMotor1ID = 54;
-	public static final int kFollowerMotor2ID = 55;
-	public static final int kFollowerMotor3ID = 56;
+	public static final int kMainMotorID  = 24;
+	public static final int kFollowerMotor1ID =25;
+	public static final int kFollowerMotor2ID = 22;
+	public static final int kFollowerMotor3ID = 23;
 	public static final String kMotorCANBus = ""; // Main RIO bus
 
 	// Control constants (PID-SVA)
@@ -28,7 +28,7 @@ public class RollerConstants {
 	public static final double kSysIdTimeout = 5;
 
 	// Soft-max, not the hardware limit RPM
-	public static final double kMaxAllowedRPM = 4500;
+	public static final double kMaxAllowedRPM = 4800;
 
 	// Gearbox reduction
 	public static final double kGearboxReduction = 20.0 / 12.0; // A 1:1 ratio
@@ -39,7 +39,7 @@ public class RollerConstants {
 
 	// Inversions
 	public static final boolean kMotorInverted = true;
-	public static final boolean kFollower1OpposesMain = true;
+	public static final boolean kFollower1OpposesMain = false;
 	public static final boolean kFollower2OpposesMain = false;
 	public static final boolean kFollower3OpposesMain = false;
 
